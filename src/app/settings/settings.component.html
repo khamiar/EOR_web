@@ -1,0 +1,75 @@
+<div class="settings-container">
+  <h1>Settings</h1>
+
+  <form (ngSubmit)="saveSettings()">
+    <!-- Notifications Section -->
+    <div class="settings-section">
+      <h2>Notifications</h2>
+      <div class="settings-group">
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" [(ngModel)]="settings.notifications.email" name="email">
+            Email Notifications
+          </label>
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" [(ngModel)]="settings.notifications.push" name="push">
+            Push Notifications
+          </label>
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" [(ngModel)]="settings.notifications.sms" name="sms">
+            SMS Notifications
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map Settings Section -->
+    <div class="settings-section">
+      <h2>Map Settings</h2>
+      <div class="settings-group">
+        <div class="setting-item">
+          <label>Default Zoom Level</label>
+          <input type="number" [(ngModel)]="settings.map.defaultZoom" name="zoom" min="1" max="20">
+        </div>
+        <div class="setting-item">
+          <label>Default Center (Latitude)</label>
+          <input type="number" [(ngModel)]="settings.map.defaultCenter.lat" name="lat" step="0.000001">
+        </div>
+        <div class="setting-item">
+          <label>Default Center (Longitude)</label>
+          <input type="number" [(ngModel)]="settings.map.defaultCenter.lng" name="lng" step="0.000001">
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme Settings Section -->
+    <div class="settings-section">
+      <h2>Theme</h2>
+      <div class="settings-group">
+        <div class="setting-item">
+          <label>
+            <input type="radio" [(ngModel)]="settings.theme" name="theme" value="light">
+            Light Theme
+          </label>
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="radio" [(ngModel)]="settings.theme" name="theme" value="dark">
+            Dark Theme
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="save-button">
+        <span class="material-icons">save</span>
+        Save Settings
+      </button>
+    </div>
+  </form>
+</div> 

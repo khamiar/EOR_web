@@ -1,0 +1,60 @@
+// register.component.scss
+@use '@angular/material' as mat;
+
+:host {
+  display: block;
+  position: fixed; // Lock to viewport
+  top: 0.3;
+  left: 0;
+  right: 0;
+  bottom: 0; // Cover entire viewport
+  min-height: 100vh;
+  background: linear-gradient(135deg, #874545 30%, #c0a4a4 70%);
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box; // Includes padding in height calculation
+  overflow: hidden; // Prevents scrolling
+}
+
+
+.register-card {
+  max-width: 450px;
+  height: calc(100vh - 3.5rem);
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+
+  .text-center {
+    text-align: center;
+    width: 100%;
+  }
+
+  .w-full {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .error-message {
+    color:  #3f51b5;
+    margin: 1rem 0;
+    text-align: center;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+    .login-link {
+      color:  #3f51b5;
+      text-decoration: none;
+      font-weight: 500;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}

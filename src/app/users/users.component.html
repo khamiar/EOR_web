@@ -1,0 +1,55 @@
+<div class="users-container">
+  <div class="header">
+    <h1>User Management</h1>
+    <button class="add-button">
+      <span class="material-icons">person_add</span>
+      Add New User
+    </button>
+  </div>
+
+  <div class="users-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Last Login</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users">
+          <td>
+            <div class="user-info">
+              <span class="material-icons">account_circle</span>
+              {{ user.name }}
+            </div>
+          </td>
+          <td>{{ user.email }}</td>
+          <td>
+            <span class="role-badge" [class.admin]="user.role === 'admin'">
+              {{ user.role }}
+            </span>
+          </td>
+          <td>
+            <span class="status-badge" [class.active]="user.status === 'active'"
+              [class.inactive]="user.status === 'inactive'">
+              {{ user.status }}
+            </span>
+          </td>
+          <td>{{ user.lastLogin | date:'medium' }}</td>
+          <td>
+            <button class="action-button">
+              <span class="material-icons">edit</span>
+            </button>
+            <button class="action-button">
+              <span class="material-icons">delete</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div> 
