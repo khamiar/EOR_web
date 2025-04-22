@@ -42,9 +42,9 @@ export class RegisterComponent {
     private authService: AuthService
   ) {
     this.registerForm = this.fb.group({
-      name: ['', Validators.required],
+      fullName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      phone: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
+      phoneNumber: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
       address: ['', Validators.required],
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', Validators.required]
@@ -64,16 +64,17 @@ export class RegisterComponent {
       this.isLoading = true;
       this.errorMessage = '';
 
-      const { name, email, phone, address, password } = this.registerForm.value;
+      const { fullName, email, phoneNumber, address, password } = this.registerForm.value;
 
-      this.authService.register({ name, email, phone, address, password }).subscribe({
+      this.authService.register({ fullName, email, phoneNumber, address, password, role: "ADMIN"  }).subscribe({
         next: (response) => {
           this.isLoading = false;
-          this.router.navigate(['/dashboard']);
+          this.router.navigate(['/login']);
         },
         error: (error: HttpErrorResponse) => {
           this.isLoading = false;
           this.errorMessage = error.error?.message || 'Registration failed. Please try again.';
+          console.error('Registration error:', error); // This for debugging
         }
       });
     }

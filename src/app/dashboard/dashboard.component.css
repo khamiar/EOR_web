@@ -11,27 +11,52 @@
 
 .stat-card {
   background: white;
+  border-left: 5px solid #ccc;
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .stat-card h3 {
   margin: 0;
-  color: #666;
+  color: #555;
   font-size: 1rem;
 }
 
 .stat-number {
   font-size: 2rem;
   font-weight: bold;
-  margin: 10px 0 0;
-  color: #333;
+  margin-top: 10px;
+  color: #222;
 }
+
+/* Colored borders */
+.stat-card--blue {
+  border-left-color: #007BFF;
+}
+
+.stat-card--green {
+  border-left-color: #28A745;
+}
+
+.stat-card--orange {
+  border-left-color: #FD7E14;
+}
+
+.stat-card--purple {
+  border-left-color: #6F42C1;
+}
+
 
 .map-container {
   height: 500px;
-  background: #f5f5f5;
+  background: #8b7979;
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 20px;

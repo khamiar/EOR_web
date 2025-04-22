@@ -41,7 +41,10 @@
         type="submit"
         [disabled]="loginForm.invalid || isLoading"
       >
-        <span *ngIf="!isLoading">Sign In</span>
+        <span *ngIf="!isLoading">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+
+        </span>
         <mat-spinner diameter="24" *ngIf="isLoading"></mat-spinner>
       </button>
 

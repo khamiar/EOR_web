@@ -5,11 +5,12 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
 interface RegisterData {
-  name: string;
+  fullName: string;
   email: string;
-  phone: string;
+  phoneNumber: string;
   address: string;
   password: string;
+  role: string;
 }
 
 interface LoginData {
@@ -26,12 +27,12 @@ interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:3000/api'; // Replace with your actual backend URL
+  private apiUrl = 'http://localhost:8080/api/auth'; // Replace with your actual backend URL
 
   constructor(private http: HttpClient) {}
 
   register(userData: RegisterData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, userData).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData).pipe(
       tap((response: AuthResponse) => {
         if (response.token) {
           localStorage.setItem('token', response.token);
@@ -41,7 +42,7 @@ export class AuthService {
   }
 
   login(credentials: LoginData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, credentials).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/authenticate`, credentials).pipe(
       tap((response: AuthResponse) => {
         if (response.token) {
           localStorage.setItem('token', response.token);

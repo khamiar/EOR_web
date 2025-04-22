@@ -5,6 +5,11 @@ import { authGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
   {
+    path: '',
+    redirectTo: 'login',
+    pathMatch: 'full'
+  },
+  {
     path: 'login',
     loadComponent: () => import('./login/login.component').then(m => m.LoginComponent)
   },
@@ -22,15 +27,9 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {
-        path: '',
-        redirectTo: 'dashboard',
-        pathMatch: 'full'
-      },
-      {
         path: 'dashboard',
         component: DashboardComponent
       },
-      // Add other routes here
       {
         path: 'outages',
         loadComponent: () => import('./outages/outages.component').then(m => m.OutagesComponent)

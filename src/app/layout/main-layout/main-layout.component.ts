@@ -1,15 +1,20 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, RouterOutlet } from '@angular/router';
+import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, RouterOutlet],
+  imports: [CommonModule, RouterModule, RouterOutlet, MatIcon],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.css']
 })
+
 export class MainLayoutComponent {
+logout() {
+throw new Error('Method not implemented.');
+}
   isSidebarOpen = true;
   menuItems = [
     {
