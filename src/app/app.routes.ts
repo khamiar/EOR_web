@@ -35,8 +35,8 @@ export const routes: Routes = [
         loadComponent: () => import('./outages/outages.component').then(m => m.OutagesComponent)
       },
       {
-        path: 'reports',
-        loadComponent: () => import('./reports/reports.component').then(m => m.ReportsComponent)
+        path: 'feedback',
+        loadComponent: () => import('./feedback/feedback.component').then(m => m.FeedbackComponent)
       },
       {
         path: 'users',

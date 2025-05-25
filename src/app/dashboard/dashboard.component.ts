@@ -1,7 +1,8 @@
 import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Map, marker, tileLayer } from 'leaflet';
+import { Map as LeafletMap, marker, tileLayer } from 'leaflet';
 import * as L from 'leaflet';
+import { ReportService } from '../services/report.service.js';
 
 
 
@@ -22,11 +23,21 @@ interface Outage {
     lat: number;
     lng: number;
   };
-  status: 'pending' | 'resolved' | "inprogress";
+  locationName?: string;
+  status: 'pending' | 'resolved' | 'inprogress';
+  reportedAt: string;
+  resolvedAt?: string;
+  resolutionNotes?: string;
+  reporter?: {
+    fullName: string;
+    email: string;
+    phoneNumber?: string;
+  };
   media?: {
     type: 'image' | 'video';
     url: string;
   };
+  isRecent?: boolean;
 }
 
 @Component({
@@ -38,80 +49,120 @@ interface Outage {
 })
 export class DashboardComponent implements OnInit {
   @ViewChild('map') mapContainer!: ElementRef;
-  map!: Map;
+  map!: LeafletMap;
   
   totalOutages = 0;
   resolvedOutages = 0;
   pendingOutages = 0;
-  inprogressOutages= 0;
-  // totalUsers = 0;
+  inprogressOutages = 0;
   
   selectedOutage: Outage | null = null;
   outages: Outage[] = [];
-inprogress: any;
+  private locationCache = new Map<string, string>();
 
-  constructor() {}
-  
+constructor(private reportService: ReportService) {}
 
   ngOnInit() {
-    // this.initializeMap();
     this.loadOutages();
   }
 
   ngAfterViewInit() {
-    this.initializeMap(); // DOM is ready, ViewChild is set
+    this.initializeMap();
   }
 
   private initializeMap() {
-    this.map = L.map(this.mapContainer.nativeElement).setView([-6.1798, 39.3123], 8.5); // Center to SUZA
+    this.map = L.map(this.mapContainer.nativeElement).setView([-6.1798, 39.3123], 8.5);
     tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(this.map);
-    this.addOutageMarkers(); // Only call this after map is ready
+    this.addOutageMarkers();
   }
 
   private loadOutages() {
-    // TODO: Replace with actual API call
-    this.outages = [
-      {
-        id: '1',
-        title: 'Power Outage in Paje',
-        description: 'Major power outage affecting multiple buildings',
-        location: { lat: -6.2707, lng: 39.5373 },
-        status: 'pending',
-        media: {
-          type: 'image',
-          url: 'assets/outage1.jpg'
-        }
-      },
-      {
-        id: '2',
-        title: 'SUZA Campus Outage',
-        description: 'Power outage reported at the SUZA main campus in Tunguu, Zanzibar.',
-        location: { lat: -6.1798, lng: 39.3123 },
-        status: 'resolved',
-        media: {
-          type: 'image',
-          url: 'assets/suza_outage.jpg' // Make sure to have this image or update the path
-        }
-      },
-      {
-        id: '3',
-        title: 'CHAKECHAKE  Outage',
-        description: 'Power outage reported at the CHAKECHAKE Pemba, Zanzibar.',
-        location: { lat: -5.2383, lng: 39.7667 },
-        status: 'inprogress',
-        media: {
-          type: 'image',
-          url: 'assets/suza_outage.jpg' // Make sure to have this image or update the path
-        }
-      }
-    ];
-    
-
-    this.updateStatistics();
-    this.addOutageMarkers();
+    this.reportService.getAllReports().subscribe((reports) => {
+      console.log('Reports:', reports);
+      this.outages = reports.map((report: any) => ({
+        id: report.id.toString(),
+        title: report.title,
+        description: report.description,
+        location: {
+          lat: report.latitude,
+          lng: report.longitude
+        },
+        status: this.mapStatus(report.status),
+        reportedAt: report.reportedAt,
+        resolvedAt: report.resolvedAt,
+        resolutionNotes: report.resolutionNotes,
+        reporter: report.reporter,
+        media: report.mediaUrl ? { type: 'image', url: report.mediaUrl } : undefined
+      }));
+  
+      this.updateStatistics();
+      this.addOutageMarkers();
+      
+      // Get location names for all outages
+      this.outages.forEach(outage => {
+        this.getLocationName(outage.location.lat, outage.location.lng);
+      });
+    });
   }
+
+  private getLocationName(latitude: number, longitude: number): void {
+    const cacheKey = `${latitude},${longitude}`;
+    
+    if (this.locationCache.has(cacheKey)) {
+      const outage = this.outages.find(o => 
+        o.location.lat === latitude && o.location.lng === longitude
+      );
+      if (outage) {
+        outage.locationName = this.locationCache.get(cacheKey);
+      }
+      return;
+    }
+
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`;
+    
+    fetch(url, {
+      headers: {
+        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'EOReporter/1.0'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      const locationName = data.display_name || 'Unknown Location';
+      this.locationCache.set(cacheKey, locationName);
+      
+      const outage = this.outages.find(o => 
+        o.location.lat === latitude && o.location.lng === longitude
+      );
+      if (outage) {
+        outage.locationName = locationName;
+      }
+    })
+    .catch(error => {
+      console.error('Error getting location name:', error);
+      this.locationCache.set(cacheKey, 'Location lookup failed');
+    });
+  }
+  
+  // Add a helper method to map the status string to the expected value
+ private mapStatus(status: string): 'pending' | 'resolved' | 'inprogress' {
+  switch (status.toUpperCase()) {
+    case 'PENDING':
+      return 'pending';
+    case 'IN_PROGRESS':
+      return 'inprogress';
+    case 'RESOLVED':
+      return 'resolved';
+    default:
+      return 'pending';
+  }
+}
+
+  
+  
+  
 
   private updateStatistics() {
     this.totalOutages = this.outages.length;
@@ -124,17 +175,41 @@ inprogress: any;
 
   private addOutageMarkers() {
     if (!this.map) return;
+  
+    // Remove all existing markers before adding new ones
+    this.map.eachLayer((layer) => {
+      if (layer instanceof L.Marker) {
+        this.map.removeLayer(layer);
+      }
+    });
+  
+    // Filter outages to show pending and in-progress outages
+    const activeOutages = this.outages.filter(outage => 
+      outage.status === 'pending' || outage.status === 'inprogress'
+    );
 
-    this.outages.forEach(outage => {
+    activeOutages.forEach(outage => {
       const markerInstance = marker([outage.location.lat, outage.location.lng])
         .addTo(this.map)
         .bindPopup(outage.title)
         .on('click', () => this.showOutageDetails(outage));
     });
   }
+  
+  // Add a method to check if an outage is recent
+  isRecentOutage(outage: Outage): boolean {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const reportedDate = new Date(outage.reportedAt);
+    return reportedDate >= oneWeekAgo;
+  }
 
+  // Update the showOutageDetails method to include a "recent" indicator
   showOutageDetails(outage: Outage) {
-    this.selectedOutage = outage;
+    this.selectedOutage = {
+      ...outage,
+      isRecent: this.isRecentOutage(outage)
+    };
   }
 
   closeModal() {

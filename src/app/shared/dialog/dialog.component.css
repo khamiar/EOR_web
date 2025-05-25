@@ -1,0 +1,166 @@
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.dialog-container {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.2s ease-out;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.dialog-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.dialog-icon .material-icons {
+  font-size: 20px;
+  color: white;
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #666;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.dialog-content {
+  padding: 20px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.dialog-actions {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #eee;
+}
+
+.dialog-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.dialog-button.primary {
+  color: white;
+}
+
+.dialog-button.secondary {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.dialog-button.secondary:hover {
+  background: #e0e0e0;
+}
+
+/* Icon Colors */
+.text-green-500 {
+  color: #4caf50;
+}
+
+.text-red-500 {
+  color: #f44336;
+}
+
+.text-yellow-500 {
+  color: #ff9800;
+}
+
+.text-blue-500 {
+  color: #2196f3;
+}
+
+/* Button Colors */
+.bg-green-500 {
+  background: #4caf50;
+}
+
+.bg-green-500:hover {
+  background: #43a047;
+}
+
+.bg-red-500 {
+  background: #f44336;
+}
+
+.bg-red-500:hover {
+  background: #e53935;
+}
+
+.bg-yellow-500 {
+  background: #ff9800;
+}
+
+.bg-yellow-500:hover {
+  background: #fb8c00;
+}
+
+.bg-blue-500 {
+  background: #2196f3;
+}
+
+.bg-blue-500:hover {
+  background: #1e88e5;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+} 

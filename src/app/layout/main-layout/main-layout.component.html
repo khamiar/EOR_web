@@ -19,18 +19,31 @@
         <span *ngIf="isSidebarOpen" class="nav-text">{{ item.title }}</span>
       </a>
     </nav>
-    <button mat-button color="accent" (click)="logout()">
+    <!-- <button mat-button color="accent" (click)="logout()">
       <mat-icon>logout</mat-icon>
       Logout
-    </button>
+    </button> -->
   </aside>
 
   <!-- Main Content -->
   <main class="main-content">
     <header class="top-bar">
       <div class="user-info">
-        <span class="material-icons">account_circle</span>
-        <span>Admin User</span>
+        <button mat-button [matMenuTriggerFor]="profileMenu" class="profile-button">
+          <span class="material-icons">account_circle</span>
+          <span class="user-name">{{ currentUser?.fullName || 'Loading...' }}</span>
+          <span class="material-icons">arrow_drop_down</span>
+        </button>
+        <mat-menu #profileMenu="matMenu">
+          <button mat-menu-item (click)="viewProfile()">
+            <span class="material-icons">person</span>
+            <span>View Profile</span>
+          </button>
+          <button mat-menu-item (click)="logout()">
+            <span class="material-icons">logout</span>
+            <span>Logout</span>
+          </button>
+        </mat-menu>
       </div>
     </header>
     

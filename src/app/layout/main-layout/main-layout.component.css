@@ -91,7 +91,45 @@
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.profile-button:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.profile-button .material-icons {
+  color: #666;
+}
+
+.profile-button .user-name {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+::ng-deep .mat-menu-panel {
+  min-width: 180px !important;
+}
+
+::ng-deep .mat-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+}
+
+::ng-deep .mat-menu-item .material-icons {
+  font-size: 20px;
+  color: #666;
 }
 
 .content-wrapper {

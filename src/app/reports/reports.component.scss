@@ -1,0 +1,62 @@
+.reports-container {
+  padding: 24px;
+
+  .filters-section {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+
+    mat-form-field {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .date-range {
+      display: flex;
+      gap: 16px;
+      flex: 2;
+      min-width: 400px;
+    }
+  }
+
+  .reports-table {
+    width: 100%;
+    overflow-x: auto;
+
+    table {
+      width: 100%;
+    }
+
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: white;
+      font-size: 12px;
+      font-weight: 500;
+    }
+  }
+
+  .loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+  }
+}
+
+// Responsive styles
+@media (max-width: 768px) {
+  .reports-container {
+    padding: 16px;
+
+    .filters-section {
+      flex-direction: column;
+
+      .date-range {
+        flex-direction: column;
+        min-width: unset;
+      }
+    }
+  }
+} 

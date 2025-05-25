@@ -1,0 +1,66 @@
+<h2 mat-dialog-title>Report Details</h2>
+
+<mat-dialog-content>
+  <div class="report-details">
+    <div class="detail-row">
+      <span class="label">Title:</span>
+      <span class="value">{{ report.title }}</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="label">Description:</span>
+      <span class="value">{{ report.description }}</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="label">Location:</span>
+      <span class="value">{{ report.location }}</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="label">Reported By:</span>
+      <span class="value">{{ report.reporter.fullName }} ({{ report.reporter.email }})</span>
+    </div>
+
+    <div class="detail-row">
+      <span class="label">Reported At:</span>
+      <span class="value">{{ report.reportedAt | date:'medium' }}</span>
+    </div>
+
+    <div class="detail-row" *ngIf="report.resolvedAt">
+      <span class="label">Resolved At:</span>
+      <span class="value">{{ report.resolvedAt | date:'medium' }}</span>
+    </div>
+
+    <div class="detail-row" *ngIf="report.resolutionNotes">
+      <span class="label">Resolution Notes:</span>
+      <span class="value">{{ report.resolutionNotes }}</span>
+    </div>
+
+    <div class="detail-row" *ngIf="report.imageUrl">
+      <span class="label">Image:</span>
+      <img [src]="report.imageUrl" alt="Report Image" class="report-image">
+    </div>
+
+    <div class="status-update">
+      <mat-form-field appearance="outline">
+        <mat-label>Update Status</mat-label>
+        <mat-select [(ngModel)]="selectedStatus">
+          <mat-option *ngFor="let option of statusOptions" [value]="option.value">
+            {{ option.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" *ngIf="selectedStatus === 'RESOLVED'">
+        <mat-label>Resolution Notes</mat-label>
+        <textarea matInput [(ngModel)]="resolutionNotes" rows="3"></textarea>
+      </mat-form-field>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Close</button>
+  <button mat-raised-button color="primary" (click)="updateStatus()">Update Status</button>
+</mat-dialog-actions> 
