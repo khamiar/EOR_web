@@ -1,8 +1,10 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Map as LeafletMap, marker, tileLayer } from 'leaflet';
 import * as L from 'leaflet';
 import { ReportService } from '../services/report.service.js';
+import { MapSettingsService } from '../services/map-settings.service';
+import { Subscription } from 'rxjs';
 
 
 
@@ -47,7 +49,7 @@ interface Outage {
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('map') mapContainer!: ElementRef;
   map!: LeafletMap;
   
@@ -59,8 +61,12 @@ export class DashboardComponent implements OnInit {
   selectedOutage: Outage | null = null;
   outages: Outage[] = [];
   private locationCache = new Map<string, string>();
+  private mapSettingsSubscription?: Subscription;
 
-constructor(private reportService: ReportService) {}
+constructor(
+  private reportService: ReportService,
+  private mapSettingsService: MapSettingsService
+) {}
 
   ngOnInit() {
     this.loadOutages();
@@ -68,10 +74,27 @@ constructor(private reportService: ReportService) {}
 
   ngAfterViewInit() {
     this.initializeMap();
+    
+    // Subscribe to map settings changes and update map accordingly
+    this.mapSettingsSubscription = this.mapSettingsService.mapSettings$.subscribe(settings => {
+      if (this.map) {
+        this.map.setView([settings.defaultCenter.lat, settings.defaultCenter.lng], settings.defaultZoom);
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.mapSettingsSubscription) {
+      this.mapSettingsSubscription.unsubscribe();
+    }
   }
 
   private initializeMap() {
-    this.map = L.map(this.mapContainer.nativeElement).setView([-6.1798, 39.3123], 8.5);
+    const currentSettings = this.mapSettingsService.getCurrentSettings();
+    this.map = L.map(this.mapContainer.nativeElement).setView(
+      [currentSettings.defaultCenter.lat, currentSettings.defaultCenter.lng], 
+      currentSettings.defaultZoom
+    );
     tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(this.map);

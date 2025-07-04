@@ -5,15 +5,26 @@ import { environment } from '../../environments/environment';
 
 export interface UserFeedback {
   id: number;
-  userId: number;
-  userName: string;
-  userEmail: string;
   subject: string;
   message: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED';
-  createdAt: string;
-  resolvedAt?: string;
+  status: 'PENDING' | 'REVIEWED' | 'RESOLVED';
   response?: string;
+  createdAt: string;
+  updatedAt?: string;
+  respondedAt?: string;
+  user: {
+    id: number;
+    fullName: string;
+    email: string;
+  };
+  respondedBy?: {
+    id: number;
+    fullName: string;
+    email: string;
+  };
+  // Computed properties for display
+  userName?: string;
+  userEmail?: string;
 }
 
 @Injectable({
@@ -25,19 +36,25 @@ export class FeedbackService {
   constructor(private http: HttpClient) {}
 
   getAllFeedback(): Observable<UserFeedback[]> {
-    return this.http.get<UserFeedback[]>(this.apiUrl);
+    return this.http.get<UserFeedback[]>(`${this.apiUrl}/all`);
   }
 
   getFeedbackById(id: number): Observable<UserFeedback> {
     return this.http.get<UserFeedback>(`${this.apiUrl}/${id}`);
   }
 
-  updateFeedbackStatus(id: number, status: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED'): Observable<UserFeedback> {
-    return this.http.patch<UserFeedback>(`${this.apiUrl}/${id}/status`, { status });
+  updateFeedbackStatus(id: number, status: 'PENDING' | 'REVIEWED' | 'RESOLVED'): Observable<UserFeedback> {
+    return this.http.put<UserFeedback>(`${this.apiUrl}/${id}/respond`, { 
+      status: status,
+      response: null 
+    });
   }
 
   respondToFeedback(id: number, response: string): Observable<UserFeedback> {
-    return this.http.post<UserFeedback>(`${this.apiUrl}/${id}/respond`, { response });
+    return this.http.put<UserFeedback>(`${this.apiUrl}/${id}/respond`, { 
+      status: 'REVIEWED',
+      response: response 
+    });
   }
 
   deleteFeedback(id: number): Observable<void> {

@@ -1,66 +1,204 @@
 .register-container {
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background-color: #f5f5f5;
-  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 0;
 }
 
 .register-card {
-  max-width: 400px;
+  max-width: 600px;
   width: 100%;
-  padding: 24px;
+  padding: 32px 28px 24px 28px;
+  margin: auto;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+  background: #fff;
+  animation: fadeIn 0.8s cubic-bezier(0.4,0,0.2,1);
+  transition: transform 0.2s;
+}
+
+.register-card:hover {
+  transform: scale(1.015);
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.22);
+}
+
+.text-center {
+  text-align: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.heading-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 0.5em;
+}
+
+.heading-center mat-icon {
+  margin-bottom: 0.2em;
+}
+
+.heading-center mat-card-title,
+.heading-center mat-card-subtitle {
+  text-align: center;
+  width: 100%;
+  margin: 0;
+}
+
+mat-card-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 0.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+}
+
+mat-card-subtitle {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 1.5em;
+  text-align: center;
+}
+
+.form-columns {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 1.2em;
+}
+
+.form-column {
+  flex: 1;
+  min-width: 0;
 }
 
 .full-width {
   width: 100%;
-  margin-bottom: 16px;
+  margin-bottom: 0.7em;
+}
+
+/* Make form fields more compact */
+::ng-deep .mat-form-field-wrapper {
+  margin-bottom: -1.2em;
+  padding-bottom: 0;
+}
+
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {
+  padding: 0.3em 0;
+  font-size: 1em;
+}
+
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-outline {
+  top: 0;
+}
+
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-suffix {
+  top: 0;
+}
+
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-label {
+  font-size: 1em;
+}
+
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-outline-gap {
+  padding: 0 4px;
+}
+
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-outline-start,
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-outline-end {
+  border-width: 1px;
+}
+
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-subscript-wrapper {
+  margin-top: 0;
 }
 
 .error-message {
   color: #f44336;
-  margin-bottom: 16px;
+  margin-bottom: 0.7em;
   text-align: center;
+  font-size: 0.95em;
 }
 
 .login-link {
   text-align: center;
-  margin-top: 16px;
+  margin-top: 0.7em;
   color: #666;
+  font-size: 0.95em;
 }
 
 .login-link a {
   color: #1976d2;
   text-decoration: none;
   cursor: pointer;
+  transition: color 0.2s;
 }
 
 .login-link a:hover {
   text-decoration: underline;
-}
-
-mat-card-title {
-  text-align: center;
-  margin-bottom: 24px;
-  font-size: 24px;
-  font-weight: 500;
+  color: #0d47a1;
 }
 
 mat-card-content {
-  padding: 0 16px;
+  padding: 0 4px;
 }
 
 mat-card-footer {
-  padding: 16px;
-  margin-top: 16px;
+  padding: 8px 0 0 0;
+  margin-top: 8px;
+  background: none;
+  box-shadow: none;
 }
 
 button[type="submit"] {
-  height: 48px;
-  font-size: 16px;
+  display: block;
+  margin: 1.2em auto 0 auto;
+  min-width: 120px;
+  width: auto;
+  padding: 0 32px;
+  height: 42px;
+  font-size: 1.05em;
+  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  background: linear-gradient(90deg, #1976d2 60%, #64b5f6 100%);
+  color: #fff;
+  font-weight: 500;
+}
+
+button[type="submit"]:hover:not(:disabled) {
+  background: linear-gradient(90deg, #1565c0 60%, #42a5f5 100%);
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.16);
+  transform: translateY(-2px) scale(1.03);
 }
 
 mat-spinner {
   margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .form-columns {
+    flex-direction: column;
+    gap: 0;
+  }
+  .register-card {
+    margin: 4px;
+    padding: 10px;
+    max-width: 98vw;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(30px) scale(0.98); }
+  to { opacity: 1; transform: none; }
 } 

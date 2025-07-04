@@ -1,0 +1,93 @@
+<div class="announcement-dialog">
+  <div class="dialog-header">
+    <mat-icon class="header-icon">campaign</mat-icon>
+    <h2 mat-dialog-title>Create Announcement</h2>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <mat-dialog-content>
+      <div class="form-section">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Title</mat-label>
+          <input matInput formControlName="title" required>
+          <mat-icon matSuffix>title</mat-icon>
+          <mat-error *ngIf="form.get('title')?.hasError('required')">Title is required</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-section">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Content</mat-label>
+          <textarea matInput formControlName="content" rows="4" placeholder="Enter announcement content..."></textarea>
+          <mat-icon matSuffix>description</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="form-half">
+          <mat-label>Category</mat-label>
+          <mat-select formControlName="category" required>
+            <mat-option *ngFor="let category of categories" [value]="category">{{category}}</mat-option>
+          </mat-select>
+          <mat-icon matSuffix>category</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="form-half">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status" required>
+            <mat-option *ngFor="let status of statuses" [value]="status">
+              <span [class]="'status-' + status.toLowerCase()">{{status}}</span>
+            </mat-option>
+          </mat-select>
+          <mat-icon matSuffix>info</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="form-section">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Publish Date</mat-label>
+          <input
+            matInput
+            type="date"
+            formControlName="publishDate"
+            placeholder="Select a date"
+          >
+          <mat-hint>Format: MM/DD/YYYY</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="form-section file-upload-container">
+        <label class="file-upload-label">Attachment</label>
+        <div class="file-upload-content">
+          <button mat-stroked-button type="button" (click)="fileInput.click()">
+            <mat-icon>attach_file</mat-icon>
+            Choose File
+          </button>
+          <input #fileInput type="file" (change)="handleFileInput($event)" style="display: none;">
+          <span class="file-name" *ngIf="form.get('attachmentUrl')?.value">
+            {{ form.get('attachmentUrl')?.value }}
+          </span>
+        </div>
+      </div>
+
+      <div class="form-section notification-toggle">
+        <mat-checkbox formControlName="sendNotification">
+          Send Notification
+        </mat-checkbox>
+        <mat-icon class="toggle-icon">notifications</mat-icon>
+      </div>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+      <button mat-stroked-button type="button" (click)="onCancel()">
+        <mat-icon>cancel</mat-icon>
+        Cancel
+      </button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="!form.valid || isUploading">
+        <mat-icon *ngIf="!isUploading">save</mat-icon>
+        <mat-spinner *ngIf="isUploading" diameter="20"></mat-spinner>
+        {{ isUploading ? 'Uploading...' : 'Save' }}
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>

@@ -1,26 +1,76 @@
-<div class="settings-container">
+<div class="settings-container" [attr.data-theme]="settings.theme">
   <h1>Settings</h1>
 
   <form (ngSubmit)="saveSettings()">
+    <!-- Theme Mode Section -->
+    <div class="settings-section">
+      <h2>
+        <span class="material-icons section-icon">palette</span>
+        Theme Mode
+      </h2>
+      <div class="settings-group">
+        <div class="mode-selector">
+          <div class="mode-option" [class.active]="settings.theme === 'light'" (click)="setTheme('light')">
+            <div class="mode-icon light-icon">
+              <span class="material-icons">light_mode</span>
+            </div>
+            <div class="mode-content">
+              <h3>Light Mode</h3>
+              <p>Clean, bright interface perfect for daytime use</p>
+            </div>
+            <div class="mode-radio">
+              <input type="radio" [(ngModel)]="settings.theme" name="theme" value="light">
+            </div>
+          </div>
+          
+          <div class="mode-option" [class.active]="settings.theme === 'dark'" (click)="setTheme('dark')">
+            <div class="mode-icon dark-icon">
+              <span class="material-icons">dark_mode</span>
+            </div>
+            <div class="mode-content">
+              <h3>Dark Mode</h3>
+              <p>Easy on the eyes, perfect for low-light environments</p>
+            </div>
+            <div class="mode-radio">
+              <input type="radio" [(ngModel)]="settings.theme" name="theme" value="dark">
+            </div>
+          </div>
+        </div>
+        
+        <div class="mode-status">
+          <div class="status-indicator" [ngClass]="'status-' + settings.theme">
+            <span class="material-icons">{{ settings.theme === 'light' ? 'light_mode' : 'dark_mode' }}</span>
+            Currently using <strong>{{ settings.theme === 'light' ? 'Light' : 'Dark' }} Theme</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Notifications Section -->
     <div class="settings-section">
-      <h2>Notifications</h2>
+      <h2>
+        <span class="material-icons section-icon">notifications</span>
+        Notifications
+      </h2>
       <div class="settings-group">
         <div class="setting-item">
           <label>
             <input type="checkbox" [(ngModel)]="settings.notifications.email" name="email">
+            <span class="checkmark"></span>
             Email Notifications
           </label>
         </div>
         <div class="setting-item">
           <label>
             <input type="checkbox" [(ngModel)]="settings.notifications.push" name="push">
+            <span class="checkmark"></span>
             Push Notifications
           </label>
         </div>
         <div class="setting-item">
           <label>
             <input type="checkbox" [(ngModel)]="settings.notifications.sms" name="sms">
+            <span class="checkmark"></span>
             SMS Notifications
           </label>
         </div>
@@ -29,38 +79,28 @@
 
     <!-- Map Settings Section -->
     <div class="settings-section">
-      <h2>Map Settings</h2>
+      <h2>
+        <span class="material-icons section-icon">map</span>
+        Map Settings
+      </h2>
       <div class="settings-group">
         <div class="setting-item">
-          <label>Default Zoom Level</label>
-          <input type="number" [(ngModel)]="settings.map.defaultZoom" name="zoom" min="1" max="20">
+          <label>Default Zoom Level (1-20)</label>
+          <input type="number" [(ngModel)]="settings.map.defaultZoom" name="zoom" min="1" max="20" step="0.1">
         </div>
         <div class="setting-item">
           <label>Default Center (Latitude)</label>
-          <input type="number" [(ngModel)]="settings.map.defaultCenter.lat" name="lat" step="0.000001">
+          <input type="number" [(ngModel)]="settings.map.defaultCenter.lat" name="lat" step="0.000001" min="-90" max="90">
         </div>
         <div class="setting-item">
           <label>Default Center (Longitude)</label>
-          <input type="number" [(ngModel)]="settings.map.defaultCenter.lng" name="lng" step="0.000001">
-        </div>
-      </div>
-    </div>
-
-    <!-- Theme Settings Section -->
-    <div class="settings-section">
-      <h2>Theme</h2>
-      <div class="settings-group">
-        <div class="setting-item">
-          <label>
-            <input type="radio" [(ngModel)]="settings.theme" name="theme" value="light">
-            Light Theme
-          </label>
+          <input type="number" [(ngModel)]="settings.map.defaultCenter.lng" name="lng" step="0.000001" min="-180" max="180">
         </div>
         <div class="setting-item">
-          <label>
-            <input type="radio" [(ngModel)]="settings.theme" name="theme" value="dark">
-            Dark Theme
-          </label>
+          <button type="button" class="reset-button" (click)="resetMapSettings()">
+            <span class="material-icons">restore</span>
+            Reset to Default (Zanzibar 2 Islands View)
+          </button>
         </div>
       </div>
     </div>

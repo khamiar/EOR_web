@@ -3,6 +3,9 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { map, catchError } from 'rxjs/operators';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as ExcelJS from 'exceljs';
 
 export interface OutageReport {
   locationName: string;
@@ -18,11 +21,13 @@ export interface OutageReport {
   resolvedAt?: string;
   resolutionNotes?: string;
   reporter: {
+phoneNumber: any;
     id: number;
     fullName: string;
     email: string;
   };
 }
+
 @Injectable({
   providedIn: 'root'
 })
@@ -96,71 +101,153 @@ export class ReportService {
     });
   }
 
-  // Generate report
-  generateReport(fromDate: string, toDate: string, format: string): Observable<Blob> {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      return new Observable(observer => {
-        observer.error(new Error('Authentication token not found. Please log in again.'));
-      });
+  // Generate report client-side
+  async generateReport(outages: OutageReport[], fromDate: string, toDate: string, format: string): Promise<void> {
+    try {
+      if (format === 'pdf') {
+        this.generatePDF(outages, fromDate, toDate);
+      } else if (format === 'excel') {
+        await this.generateExcel(outages, fromDate, toDate);
+      } else {
+        throw new Error('Unsupported format');
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      throw new Error('Failed to generate report: ' + (error as Error).message);
     }
+  }
 
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Accept': format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
+  private generatePDF(outages: OutageReport[], fromDate: string, toDate: string): void {
+    try {
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(20);
+      doc.text('Outage Report', 14, 20);
+      
+      // Add date range
+      doc.setFontSize(12);
+      doc.text(`Date Range: ${fromDate} to ${toDate}`, 14, 30);
+      
+      // Add table
+      const tableColumn = ['Title', 'Location', 'Status', 'Reported At', 'Resolved At'];
+      const tableRows = outages.map(outage => [
+        outage.title,
+        outage.locationName || 'N/A',
+        outage.status,
+        new Date(outage.reportedAt).toLocaleString(),
+        outage.resolvedAt ? new Date(outage.resolvedAt).toLocaleString() : 'N/A'
+      ]);
 
-    console.log('Sending report generation request:', {
-      fromDate,
-      toDate,
-      format,
-      headers: headers.keys()
-    });
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 40,
+        theme: 'grid',
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+        },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontSize: 12,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+      });
 
-    return this.http.get(`${this.apiUrl}/outages/generate`, {
-      params: { fromDate, toDate, format },
-      headers,
-      responseType: 'blob',
-      observe: 'response'
-    }).pipe(
-      map(response => {
-        console.log('Received response:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers.keys(),
-          body: response.body
+      // Add summary
+      const finalY = (doc as any).lastAutoTable.finalY || 40;
+      doc.setFontSize(12);
+      doc.text(`Total Outages: ${outages.length}`, 14, finalY + 20);
+      
+      // Save the PDF
+      doc.save(`outage-report-${fromDate}-to-${toDate}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      throw new Error('Failed to generate PDF report');
+    }
+  }
+
+  private async generateExcel(outages: OutageReport[], fromDate: string, toDate: string): Promise<void> {
+    try {
+      // Create a new workbook and worksheet
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Outage Report');
+
+      // Add title and date range
+      worksheet.mergeCells('A1:I1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'Outage Report';
+      titleCell.font = { size: 16, bold: true };
+      titleCell.alignment = { horizontal: 'center' };
+
+      worksheet.mergeCells('A2:I2');
+      const dateRangeCell = worksheet.getCell('A2');
+      dateRangeCell.value = `Date Range: ${fromDate} to ${toDate}`;
+      dateRangeCell.font = { size: 12 };
+      dateRangeCell.alignment = { horizontal: 'center' };
+
+      // Define columns
+      worksheet.columns = [
+        { header: 'Title', key: 'title', width: 30 },
+        { header: 'Location', key: 'location', width: 30 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Reported At', key: 'reportedAt', width: 20 },
+        { header: 'Resolved At', key: 'resolvedAt', width: 20 },
+        { header: 'Description', key: 'description', width: 40 },
+        { header: 'Reporter', key: 'reporter', width: 25 },
+        { header: 'Reporter Email', key: 'reporterEmail', width: 25 },
+        { header: 'Reporter Phone', key: 'reporterPhone', width: 20 }
+      ];
+
+      // Style the header row
+      worksheet.getRow(4).font = { bold: true };
+      worksheet.getRow(4).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '3B82F6' }
+      };
+      worksheet.getRow(4).font = { color: { argb: 'FFFFFF' } };
+
+      // Add data rows
+      outages.forEach(outage => {
+        worksheet.addRow({
+          title: outage.title,
+          location: outage.locationName || 'N/A',
+          status: outage.status,
+          reportedAt: new Date(outage.reportedAt).toLocaleString(),
+          resolvedAt: outage.resolvedAt ? new Date(outage.resolvedAt).toLocaleString() : 'N/A',
+          description: outage.description,
+          reporter: outage.reporter.fullName,
+          reporterEmail: outage.reporter.email,
+          reporterPhone: outage.reporter.phoneNumber
         });
+      });
 
-        if (!response.body) {
-          throw new Error('No data received from server');
-        }
-        return response.body;
-      }),
-      catchError(error => {
-        console.error('Error in report generation:', {
-          status: error.status,
-          statusText: error.statusText,
-          error: error.error,
-          message: error.message
-        });
+      // Add summary
+      const lastRow = worksheet.lastRow!.number;
+      worksheet.mergeCells(`A${lastRow + 2}:I${lastRow + 2}`);
+      const summaryCell = worksheet.getCell(`A${lastRow + 2}`);
+      summaryCell.value = `Total Outages: ${outages.length}`;
+      summaryCell.font = { bold: true };
+      summaryCell.alignment = { horizontal: 'center' };
 
-        if (error.status === 400) {
-          throw new Error('Invalid date format or range. Please check your input.');
-        } else if (error.status === 401) {
-          // Clear token and redirect to login
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          throw new Error('Session expired. Please log in again.');
-        } else if (error.status === 403) {
-          throw new Error('You do not have permission to generate reports. Please contact your administrator.');
-        } else if (error.status === 404) {
-          throw new Error('No reports found for the selected date range. Please try a different date range.');
-        } else if (error.status === 500) {
-          throw new Error('Server error occurred while generating report. Please try again later.');
-        } else {
-          throw new Error('Failed to generate report: ' + (error.message || 'Unknown error occurred. Please try again.'));
-        }
-      })
-    );
+      // Generate buffer and save file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `outage-report-${fromDate}-to-${toDate}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      throw new Error('Failed to generate Excel report');
+    }
   }
 }

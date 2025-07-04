@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -31,6 +31,7 @@ interface DialogConfig {
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
@@ -41,7 +42,7 @@ interface DialogConfig {
     MatButtonModule,
     MatProgressSpinnerModule,
     DialogComponent
-  ],
+  ] as const,
   templateUrl: './reports.component.html',
   styleUrls: ['./reports.component.scss']
 })
@@ -173,26 +174,29 @@ export class ReportsComponent implements OnInit {
     );
   }
 
-  generateReport() {
+  async generateReport() {
     if (!this.startDate || !this.endDate) {
       this.showDialog('Error', 'Please select both start and end dates.', 'error');
       return;
     }
 
+    if (!this.selectedFormat) {
+      this.showDialog('Error', 'Please select a report format.', 'error');
+      return;
+    }
+
+    try {
     // Convert Date objects to ISO string format
     const startDateStr = this.startDate.toISOString().split('T')[0];
     const endDateStr = this.endDate.toISOString().split('T')[0];
 
-    this.reportService.generateReport(startDateStr, endDateStr, this.selectedFormat).subscribe({
-      next: (response) => {
+      await this.reportService.generateReport(this.filteredReports, startDateStr, endDateStr, this.selectedFormat);
         this.showDialog('Success', 'Report generated successfully', 'success');
-      },
-      error: (error) => {
+    } catch (error) {
         console.error('Error generating report:', error);
-        let errorMessage = error.error?.message || 'Failed to generate report. Please try again.';
+      let errorMessage = error instanceof Error ? error.message : 'Failed to generate report. Please try again.';
         this.showDialog('Error', errorMessage, 'error');
       }
-    });
   }
 
   // Dialog methods

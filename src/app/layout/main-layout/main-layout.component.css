@@ -1,20 +1,25 @@
 .layout-container {
   display: flex;
   min-height: 100vh;
+  background: var(--bg-primary);
 }
 
 /* Sidebar Styles */
 .sidebar {
   width: 250px;
-  background: #2c3e50;
-  color: white;
-  transition: width 0.3s ease;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: width 0.3s ease, background-color 0.3s ease, color 0.3s ease;
   position: fixed;
   height: 100vh;
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 10px var(--shadow);
 }
 
 .sidebar.collapsed {
-  width: 60px;
+  width: 80px;
+  align-items: center;
+  padding: 10px 0; 
 }
 
 .sidebar-header {
@@ -22,20 +27,30 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #34495e;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
 }
 
 .sidebar-header h2 {
   margin: 0;
   font-size: 1.5rem;
+  color: var(--accent-color);
+  font-weight: 700;
 }
 
 .toggle-btn {
   background: none;
   border: none;
-  color: white;
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: 5px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+  background: var(--bg-primary);
+  color: var(--accent-color);
 }
 
 .sidebar-nav {
@@ -46,17 +61,23 @@
   display: flex;
   align-items: center;
   padding: 12px 20px;
-  color: white;
+  color: var(--text-secondary);
   text-decoration: none;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  margin: 4px 8px;
+  border-radius: 8px;
 }
 
 .nav-item:hover {
-  background-color: #34495e;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  transform: translateX(4px);
 }
 
 .nav-item.active {
-  background-color: #3498db;
+  background-color: var(--accent-color);
+  color: white;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
 }
 
 .nav-item .material-icons {
@@ -67,6 +88,7 @@
 .nav-text {
   white-space: nowrap;
   overflow: hidden;
+  font-weight: 500;
 }
 
 /* Main Content Styles */
@@ -74,18 +96,27 @@
   flex: 1;
   margin-left: 250px;
   transition: margin-left 0.3s ease;
+  padding-top: 60px; /* Add padding to account for fixed header */
+  background: var(--bg-primary);
 }
 
 .sidebar.collapsed + .main-content {
-  margin-left: 60px;
+  margin-left: 80px;
 }
 
 .top-bar {
-  background: white;
+  background: var(--bg-primary);
   padding: 15px 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px var(--shadow);
   display: flex;
   justify-content: flex-end;
+  position: fixed; /* Make the header fixed */
+  top: 0; /* Position at the top */
+  right: 0; /* Align to right */
+  left: 250px; /* Account for sidebar width */
+  z-index: 1000; /* Ensure it stays above other content */
+  transition: left 0.3s ease, background-color 0.3s ease; /* Match sidebar transition */
+  border-bottom: 1px solid var(--border-color);
 }
 
 .user-info {
@@ -98,22 +129,36 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
 }
 
 .profile-button:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: var(--accent-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--shadow);
 }
 
 .profile-button .material-icons {
-  color: #666;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+}
+
+.profile-button:hover .material-icons {
+  color: white;
 }
 
 .profile-button .user-name {
   font-size: 14px;
-  color: #333;
+  color: var(--text-primary);
   font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.profile-button:hover .user-name {
+  color: white;
 }
 
 ::ng-deep .mat-menu-panel {
@@ -132,8 +177,14 @@
   color: #666;
 }
 
+.sidebar.collapsed + .main-content .top-bar {
+  left: 80px; /* Adjust when sidebar is collapsed */
+}
+
 .content-wrapper {
   padding: 20px;
-  background: #f5f6fa;
+  background: var(--bg-secondary);
   min-height: calc(100vh - 60px);
+  margin-top: 0; /* Remove any default margin */
+  transition: background-color 0.3s ease;
 } 

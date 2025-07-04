@@ -40,7 +40,8 @@
       </mat-select>
     </mat-form-field>
   
-    <button mat-raised-button color="primary" (click)="generateReport()">
+    <button mat-raised-button color="primary" (click)="generateReport()" [disabled]="!startDate || !endDate || !selectedFormat">
+      <mat-icon>download</mat-icon>
       Generate Report
     </button>
   </div>

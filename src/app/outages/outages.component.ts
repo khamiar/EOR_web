@@ -1,7 +1,7 @@
 // outages.component.ts
-import { Component, OnInit, HostListener, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ReportService, OutageReport } from '../services/report.service'; // adjust the path
 import { HttpClientModule } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,6 +11,27 @@ import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+
+const MATERIAL_MODULES = [
+  MatTableModule,
+  MatFormFieldModule,
+  MatInputModule,
+  MatSelectModule,
+  MatDatepickerModule,
+  MatNativeDateModule,
+  MatIconModule,
+  MatButtonModule,
+  MatPaginatorModule,
+  MatSortModule,
+  MatDialogModule,
+  MatSnackBarModule
+] as const;
 
 interface DialogConfig {
   isOpen: boolean;
@@ -27,19 +48,15 @@ interface DialogConfig {
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     HttpClientModule,
-    MatIconModule,
-    DialogComponent,
-    MatTableModule,
-    MatPaginatorModule,
-    MatSortModule,
-    MatFormFieldModule,
-    MatInputModule
+    ...MATERIAL_MODULES,
+    DialogComponent
   ],
   templateUrl: './outages.component.html',
   styleUrls: ['./outages.component.css']
 })
-export class OutagesComponent implements OnInit {
+export class OutagesComponent implements OnInit, OnDestroy {
   outages: OutageReport[] = [];
   fromDate: string = '';
   toDate: string = '';
@@ -63,14 +80,50 @@ export class OutagesComponent implements OnInit {
   ];
 
   dataSource = new MatTableDataSource<OutageReport>([]);
-  displayedColumns = ['title', 'location', 'status', 'reportedAt', 'actions'];
+  displayedColumns = ['id', 'title', 'location', 'status', 'reportedAt', 'actions'];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
+  isMediaLoading: boolean = false;
+  showStatusDialog: boolean = false;
+  isStatusUpdateOpen: boolean = false;
+  
+  // Auto-refresh properties
+  private refreshInterval: any;
+  private readonly REFRESH_INTERVAL = 30000; // 30 seconds
+  isRefreshing = false;
 
   constructor(private reportService: ReportService) {}
 
   ngOnInit() {
     this.loadOutages();
+    this.startAutoRefresh();
+  }
+
+  ngOnDestroy() {
+    this.stopAutoRefresh();
+  }
+
+  private startAutoRefresh() {
+    this.refreshInterval = setInterval(() => {
+      if (!this.isRefreshing) {
+        this.refreshData();
+      }
+    }, this.REFRESH_INTERVAL);
+  }
+
+  private stopAutoRefresh() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
+  }
+
+  refreshData() {
+    this.isRefreshing = true;
+    this.loadOutages();
+    setTimeout(() => {
+      this.isRefreshing = false;
+    }, 1000);
   }
 
   ngAfterViewInit() {
@@ -87,7 +140,7 @@ export class OutagesComponent implements OnInit {
     };
   }
 
-  loadOutages() {
+  loadOutages() { 
     this.reportService.getAllReports().subscribe({
       next: (data) => {
         this.outages = data;
@@ -143,28 +196,57 @@ export class OutagesComponent implements OnInit {
     return 'Loading location...';
   }
 
-  toggleStatusDropdown(outage: OutageReport) {
-    if (this.selectedOutageForStatus === outage) {
-      this.selectedOutageForStatus = null;
-    } else {
-      this.selectedOutageForStatus = outage;
-    }
+  openStatusUpdateDialog(outage: OutageReport) {
+    this.selectedOutageForStatus = outage;
+    this.showStatusDialog = true;
   }
 
-  updateOutageStatus(id: number, newStatus: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED') {
-    this.reportService.updateReportStatus(id, newStatus).subscribe({
-      next: () => {
-        // Update the status locally
-        const outage = this.outages.find(o => o.id === id);
-        if (outage) {
-          outage.status = newStatus;
+  closeStatusDialog() {
+    this.showStatusDialog = false;
+    this.selectedOutageForStatus = null;
+  }
+
+  showStatusSelector(outage: OutageReport) {
+    this.selectedOutageForStatus = outage;
+  }
+
+  toggleStatusUpdate() {
+    this.isStatusUpdateOpen = !this.isStatusUpdateOpen;
+  }
+
+  updateOutageStatus(outageId: number | undefined, newStatus: string) {
+    if (!outageId) return;
+
+    this.reportService.updateReportStatus(outageId, newStatus).subscribe({
+      next: (updatedOutage) => {
+        // Update the outage in the data source
+        const index = this.outages.findIndex(o => o.id === outageId);
+        if (index !== -1) {
+          this.outages[index] = updatedOutage;
+          this.dataSource.data = [...this.outages];
         }
-        this.selectedOutageForStatus = null; // Close the dropdown
-        this.showDialog('Success', 'Status updated successfully', 'success');
+        
+        // Show success message
+        this.dialogConfig = {
+          isOpen: true,
+          title: 'Success',
+          message: 'Outage status updated successfully',
+          type: 'success',
+          confirmText: 'OK'
+        };
+
+        // Close the status dialog
+        this.closeStatusDialog();
       },
       error: (error) => {
-        console.error('Error updating status:', error);
-        this.showDialog('Error', 'Failed to update status. Please try again.', 'error');
+        console.error('Error updating outage status:', error);
+        this.dialogConfig = {
+          isOpen: true,
+          title: 'Error',
+          message: 'Failed to update outage status. Please try again.',
+          type: 'error',
+          confirmText: 'OK'
+        };
       }
     });
   }
@@ -198,63 +280,75 @@ export class OutagesComponent implements OnInit {
     );
   }
 
-  generateReport() {
+  async generateReport() {
     if (!this.fromDate || !this.toDate) {
-      this.showDialog('Error', 'Please select both start and end dates.', 'error');
+      this.showDialog('Error', 'Please select both from and to dates', 'error');
       return;
     }
 
-    this.reportService.generateReport(this.fromDate, this.toDate, this.reportFormat).subscribe({
-      next: (response) => {
-        // Handle successful report generation
-        this.showDialog('Success', 'Report generated successfully', 'success');
-      },
-      error: (error) => {
-        console.error('Error generating report:', error);
-        
-        let errorMessage = error.error?.message;
-        
-        if (!errorMessage) {
-          switch (error.status) {
-            case 400:
-              errorMessage = 'Invalid date format or range. Please check your input.';
-              break;
-            case 401:
-              errorMessage = 'Your session has expired. Please log in again.';
-              break;
-            case 403:
-              errorMessage = 'You do not have permission to generate reports. Please contact your administrator.';
-              break;
-            case 404:
-              errorMessage = 'No reports found for the selected date range. Please try a different date range.';
-              break;
-            case 500:
-              errorMessage = 'Server error occurred while generating report. Please try again later.';
-              break;
-            default:
-              errorMessage = 'Failed to generate report. Please try again.';
-          }
-        }
-        
-        this.showDialog('Error', errorMessage, 'error');
-      }
+    // Validate date range
+    const from = new Date(this.fromDate);
+    const to = new Date(this.toDate);
+    
+    if (from > to) {
+      this.showDialog('Error', 'From date cannot be later than To date', 'error');
+      return;
+    }
+
+    try {
+    // Filter outages based on date range
+    const filteredOutages = this.outages.filter(outage => {
+      const reportedDate = new Date(outage.reportedAt);
+      return reportedDate >= from && reportedDate <= to;
     });
+
+    if (filteredOutages.length === 0) {
+        this.showDialog('Warning', 'No outages found in the selected date range', 'info');
+      return;
+    }
+
+      await this.reportService.generateReport(filteredOutages, this.fromDate, this.toDate, this.reportFormat);
+      this.showDialog('Success', 'Report generated successfully', 'success');
+    } catch (error) {
+      console.error('Error generating report:', error);
+      let errorMessage = error instanceof Error ? error.message : 'Failed to generate report. Please try again.';
+      this.showDialog('Error', errorMessage, 'error');
+    }
   }
 
   viewOutageDetails(outage: OutageReport) {
     this.selectedOutage = outage;
+    this.isMediaLoading = true;
+    // Force a reflow to ensure the animation works
+    requestAnimationFrame(() => {
+      const modal = document.querySelector('.modal');
+      if (modal) {
+        modal.classList.add('show');
+      }
+    });
   }
 
   closeModal() {
-    this.selectedOutage = null;
+    const modal = document.querySelector('.modal');
+    if (modal) {
+      modal.classList.remove('show');
+      // Wait for animation to complete before removing the modal
+      setTimeout(() => {
+        this.selectedOutage = null;
+      }, 300);
+    } else {
+      this.selectedOutage = null;
+    }
   }
 
-  // Add click outside handler to close dropdown
+  // Add click outside listener to close selector
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.status-container')) {
-      this.selectedOutageForStatus = null;
+    if (this.selectedOutageForStatus) {
+      const statusContainer = document.querySelector('.status-container');
+      if (statusContainer && !statusContainer.contains(event.target as Node)) {
+        this.selectedOutageForStatus = null;
+      }
     }
   }
 
@@ -297,5 +391,43 @@ export class OutagesComponent implements OnInit {
     if (this.dataSource.paginator) {
       this.dataSource.paginator.firstPage();
     }
+  }
+
+  getMediaUrl(mediaUrl: string | undefined): string {
+    if (!mediaUrl) return '';
+    // If it's already a full URL, return as is
+    if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
+      return mediaUrl;
+    }
+    // Otherwise, construct the full URL with the backend base URL
+    return `http://localhost:8080/api/media/${mediaUrl}`;
+  }
+
+  onMediaLoad(event: Event) {
+    this.isMediaLoading = false;
+  }
+
+  onMediaError(event: Event) {
+    this.isMediaLoading = false;
+    console.error('Error loading media:', event);
+    this.showDialog('Error', 'Failed to load media. Please try again.', 'error');
+  }
+
+  downloadMedia(url: string | undefined) {
+    if (!url) return;
+    
+    const fullUrl = this.getMediaUrl(url);
+    const link = document.createElement('a');
+    link.href = fullUrl;
+    link.download = url.split('/').pop() || 'outage-media';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  openMediaInNewTab(url: string | undefined) {
+    if (!url) return;
+    const fullUrl = this.getMediaUrl(url);
+    window.open(fullUrl, '_blank');
   }
 }

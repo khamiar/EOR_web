@@ -1,15 +1,16 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
+
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FeedbackService, UserFeedback } from '../services/feedback.service';
 import { DialogComponent, DialogType } from '../shared/dialog/dialog.component';
 
@@ -31,25 +32,24 @@ interface DialogConfig {
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     DialogComponent,
     MatPaginatorModule,
-    MatSortModule
+    MatSortModule,
+    MatTooltipModule
   ],
   templateUrl: './feedback.component.html',
   styleUrls: ['./feedback.component.scss']
 })
-export class FeedbackComponent implements OnInit {
+export class FeedbackComponent implements OnInit, OnDestroy {
   feedback: UserFeedback[] = [];
   filteredFeedback = new MatTableDataSource<UserFeedback>([]);
   isLoading = false;
   searchTerm = '';
-  selectedStatus = '';
   selectedFeedback: UserFeedback | null = null;
-  responseText = '';
+  selectedStatus: string = '';
 
   dialogConfig: DialogConfig = {
     isOpen: false,
@@ -59,22 +59,48 @@ export class FeedbackComponent implements OnInit {
     confirmText: 'OK'
   };
 
-  statusOptions = [
-    { value: '', label: 'All' },
-    { value: 'PENDING', label: 'Pending' },
-    { value: 'IN_PROGRESS', label: 'In Progress' },
-    { value: 'RESOLVED', label: 'Resolved' }
-  ];
-
-  displayedColumns = ['userName', 'subject', 'status', 'createdAt', 'actions'];
+  displayedColumns = ['userName', 'subject', 'status', 'actions'];
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
   constructor(private feedbackService: FeedbackService) {}
 
+  // Auto-refresh properties
+  private refreshInterval: any;
+  private readonly REFRESH_INTERVAL = 30000; // 30 seconds
+  isRefreshing = false;
+
   ngOnInit(): void {
     this.loadFeedback();
+    this.startAutoRefresh();
+  }
+
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
+  }
+
+  private startAutoRefresh(): void {
+    this.refreshInterval = setInterval(() => {
+      if (!this.isRefreshing) {
+        this.refreshData();
+      }
+    }, this.REFRESH_INTERVAL);
+  }
+
+  private stopAutoRefresh(): void {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
+  }
+
+  refreshData(): void {
+    this.isRefreshing = true;
+    this.loadFeedback();
+    setTimeout(() => {
+      this.isRefreshing = false;
+    }, 1000);
   }
 
   ngAfterViewInit() {
@@ -82,24 +108,19 @@ export class FeedbackComponent implements OnInit {
     this.filteredFeedback.sort = this.sort;
 
     this.filteredFeedback.filterPredicate = (data: UserFeedback, filter: string) => {
-      const searchTerms = JSON.parse(filter);
-      const searchTerm = searchTerms.searchTerm.toLowerCase();
-      const selectedStatus = searchTerms.selectedStatus.toLowerCase();
+      const searchTerm = filter.toLowerCase();
 
-      const matchesSearch = !searchTerm ||
-        data.subject.toLowerCase().includes(searchTerm) ||
+      if (!searchTerm) return true;
+
+      return data.subject.toLowerCase().includes(searchTerm) ||
         data.message.toLowerCase().includes(searchTerm) ||
-        data.userName.toLowerCase().includes(searchTerm);
-
-      const matchesStatus = !selectedStatus || data.status.toLowerCase() === selectedStatus;
-
-      return matchesSearch && matchesStatus;
+        (data.userName?.toLowerCase().includes(searchTerm) ?? false) ||
+        (data.user?.fullName?.toLowerCase().includes(searchTerm) ?? false);
     };
 
     this.filteredFeedback.sortingDataAccessor = (item, property) => {
       switch (property) {
         case 'userName': return item.userName;
-        case 'createdAt': return new Date(item.createdAt);
         default: return (item as any)[property];
       }
     };
@@ -109,8 +130,13 @@ export class FeedbackComponent implements OnInit {
     this.isLoading = true;
     this.feedbackService.getAllFeedback().subscribe({
       next: (feedback) => {
-        this.feedback = feedback;
-        this.filteredFeedback.data = feedback;
+        // Map the nested user data to flat properties for display
+        this.feedback = feedback.map(f => ({
+          ...f,
+          userName: f.user?.fullName || 'Unknown User',
+          userEmail: f.user?.email || 'Unknown Email'
+        }));
+        this.filteredFeedback.data = this.feedback;
         this.isLoading = false;
       },
       error: (error) => {
@@ -122,54 +148,44 @@ export class FeedbackComponent implements OnInit {
   }
 
   applyFilter(): void {
-    const filterValue = {
-      searchTerm: this.searchTerm,
-      selectedStatus: this.selectedStatus
-    };
-    this.filteredFeedback.filter = JSON.stringify(filterValue);
+    this.filteredFeedback.filter = this.searchTerm;
 
     if (this.filteredFeedback.paginator) {
       this.filteredFeedback.paginator.firstPage();
     }
   }
 
-  onStatusChange(): void {
-    this.applyFilter();
-  }
-
   onSearch(): void {
     this.applyFilter();
   }
 
-  getStatusColor(status: string): string {
-    switch (status) {
-      case 'PENDING':
-        return '#ff9800';
-      case 'IN_PROGRESS':
-        return '#2196f3';
-      case 'RESOLVED':
-        return '#4caf50';
-      default:
-        return '#9e9e9e';
-    }
-  }
-
   viewFeedbackDetails(feedback: UserFeedback): void {
     this.selectedFeedback = feedback;
-    this.responseText = feedback.response || '';
+    this.selectedStatus = feedback.status;
   }
 
   closeModal(): void {
     this.selectedFeedback = null;
-    this.responseText = '';
+    this.selectedStatus = '';
   }
 
-  updateStatus(feedback: UserFeedback, newStatus: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED'): void {
-    this.feedbackService.updateFeedbackStatus(feedback.id, newStatus).subscribe({
+  updateFeedbackStatus(): void {
+    if (!this.selectedFeedback) return;
+    
+    this.feedbackService.updateFeedbackStatus(this.selectedFeedback.id, this.selectedStatus as any).subscribe({
       next: (updatedFeedback) => {
-        const index = this.feedback.findIndex(f => f.id === feedback.id);
+        // Update the feedback in the list with complete data
+        const index = this.feedback.findIndex(f => f.id === this.selectedFeedback!.id);
         if (index !== -1) {
-          this.feedback[index] = updatedFeedback;
+          // Preserve existing user data and only update status-related fields
+          this.feedback[index] = {
+            ...this.feedback[index], // Keep existing user data
+            status: updatedFeedback.status,
+            response: updatedFeedback.response,
+            respondedAt: updatedFeedback.respondedAt,
+            respondedBy: updatedFeedback.respondedBy
+          };
+          this.filteredFeedback.data = this.feedback;
           this.applyFilter();
         }
         this.showDialog('Success', 'Status updated successfully', 'success');
@@ -177,29 +193,6 @@ export class FeedbackComponent implements OnInit {
       error: (error) => {
         console.error('Error updating status:', error);
         this.showDialog('Error', 'Failed to update status', 'error');
-      }
-    });
-  }
-
-  submitResponse(): void {
-    if (!this.selectedFeedback || !this.responseText.trim()) {
-      this.showDialog('Error', 'Please enter a response', 'error');
-      return;
-    }
-
-    this.feedbackService.respondToFeedback(this.selectedFeedback.id, this.responseText).subscribe({
-      next: (updatedFeedback) => {
-        const index = this.feedback.findIndex(f => f.id === this.selectedFeedback!.id);
-        if (index !== -1) {
-          this.feedback[index] = updatedFeedback;
-          this.applyFilter();
-        }
-        this.showDialog('Success', 'Response submitted successfully', 'success');
-        this.closeModal();
-      },
-      error: (error) => {
-        console.error('Error submitting response:', error);
-        this.showDialog('Error', 'Failed to submit response', 'error');
       }
     });
   }
@@ -213,7 +206,11 @@ export class FeedbackComponent implements OnInit {
       () => {
         this.feedbackService.deleteFeedback(feedback.id).subscribe({
           next: () => {
+            // Remove from the main array
             this.feedback = this.feedback.filter(f => f.id !== feedback.id);
+            // Update the data source
+            this.filteredFeedback.data = this.feedback;
+            // Apply any existing filter
             this.applyFilter();
             this.showDialog('Success', 'Feedback deleted successfully', 'success');
           },

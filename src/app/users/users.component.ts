@@ -43,7 +43,7 @@ interface DialogConfig {
 export class UsersComponent implements OnInit {
   users: User[] = [];
   dataSource = new MatTableDataSource<User>([]);
-  displayedColumns = ['fullname', 'email', 'phone', 'address', 'role', 'actions'];
+  displayedColumns = ['id', 'fullname', 'email', 'phone', 'address', 'role', 'actions'];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   searchTerm = '';
@@ -125,7 +125,16 @@ export class UsersComponent implements OnInit {
 
   saveUserChanges() {
     if (this.editingUser && this.editingUser.id) {
-      this.userService.updateUser(this.editingUser.id, this.editingUser).subscribe({
+      // Create a clean user object with only the necessary fields
+      const updatedUserData = {
+        fullName: this.editingUser.fullName,
+        email: this.editingUser.email,
+        phoneNumber: this.editingUser.phoneNumber,
+        address: this.editingUser.address,
+        role: this.editingUser.role
+      };
+
+      this.userService.updateUser(this.editingUser.id, updatedUserData).subscribe({
         next: (updatedUser) => {
           const index = this.users.findIndex(u => u.id === updatedUser.id);
           if (index !== -1) {

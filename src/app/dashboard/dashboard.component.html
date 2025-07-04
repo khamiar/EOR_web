@@ -30,7 +30,9 @@
 
   <!-- Map Container -->
   <div class="map-container">
-    <div #map id="outageMap"></div>
+    <div #map id="outageMap">
+      <!-- MAP DISPLAY -->
+    </div>
   </div>
 
   <!-- Outage Details Modal -->
@@ -105,12 +107,12 @@
           <span class="detail-label">Media:</span>
           <div class="media-container">
             <img *ngIf="selectedOutage.media.type === 'image'" 
-                 [src]="selectedOutage.media.url" 
-                 alt="Outage Image"
-                 class="outage-image">
+              [src]="selectedOutage.media.url" 
+              alt="Outage Image"
+              class="outage-image">
             <video *ngIf="selectedOutage.media.type === 'video'" 
-                   controls
-                   class="outage-video">
+              controls
+              class="outage-video">
           <source [src]="selectedOutage.media.url" type="video/mp4">
           Your browser does not support the video tag.
         </video>

@@ -29,7 +29,9 @@ interface AuthResponse {
 export class AuthService {
   private apiUrl = 'http://localhost:8080/api/auth'; // Replace with your actual backend URL
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.clearExpiredToken();
+  }
 
   register(userData: RegisterData): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData).pipe(
@@ -55,11 +57,58 @@ export class AuthService {
     localStorage.removeItem('token');
   }
 
+  // Manual method to clear all auth data (useful for debugging)
+  clearAllAuthData(): void {
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    console.log('All authentication data cleared');
+  }
+
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    // Check if token is expired
+    if (this.isTokenExpired(token)) {
+      this.logout(); // Clear expired token
+      return false;
+    }
+    
+    return true;
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    
+    // Check if token is expired
+    if (this.isTokenExpired(token)) {
+      this.logout(); // Clear expired token
+      return null;
+    }
+    
+    return token;
+  }
+
+  private isTokenExpired(token: string): boolean {
+    try {
+      // Decode JWT payload
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      // Check if token is expired (exp is in seconds)
+      return payload.exp < currentTime;
+    } catch (error) {
+      console.error('Error checking token expiration:', error);
+      return true; // Treat invalid tokens as expired
+    }
+  }
+
+  private clearExpiredToken(): void {
+    const token = localStorage.getItem('token');
+    if (token && this.isTokenExpired(token)) {
+      console.log('Clearing expired token');
+      localStorage.removeItem('token');
+    }
   }
 }
