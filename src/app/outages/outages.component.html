@@ -28,10 +28,6 @@
         </div>
       </div>
       <div class="report-actions">
-        <button class="button secondary" (click)="refreshData()" [disabled]="isRefreshing" title="Refresh Data">
-          <span class="material-icons" [class.rotating]="isRefreshing">refresh</span>
-          {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
-        </button>
         <div class="select-wrapper">
           <span class="material-icons select-icon">description</span>
           <select [(ngModel)]="reportFormat" class="input-control">

@@ -1,5 +1,10 @@
 <div class="settings-container" [attr.data-theme]="settings.theme">
-  <h1>Settings</h1>
+  <div class="dashboard-header">
+    <div class="title-section">
+      <span class="material-icons title-icon">settings</span>
+      <h1 class="dashboard-title">Settings</h1>
+    </div>
+  </div>
 
   <form (ngSubmit)="saveSettings()">
     <!-- Theme Mode Section -->

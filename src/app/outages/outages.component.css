@@ -247,7 +247,7 @@
     transform: rotate(360deg);
   }
 }
-}
+
 
 .button.primary:hover .material-icons {
   transform: scale(1.1);

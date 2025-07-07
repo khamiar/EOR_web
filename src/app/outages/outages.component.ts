@@ -6,6 +6,7 @@ import { ReportService, OutageReport } from '../services/report.service'; // adj
 import { HttpClientModule } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
 import { DialogComponent, DialogType } from '../shared/dialog/dialog.component';
+import { WebSocketService } from '../services/websocket.service';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
@@ -86,45 +87,76 @@ export class OutagesComponent implements OnInit, OnDestroy {
   isMediaLoading: boolean = false;
   showStatusDialog: boolean = false;
   isStatusUpdateOpen: boolean = false;
-  
-  // Auto-refresh properties
-  private refreshInterval: any;
-  private readonly REFRESH_INTERVAL = 30000; // 30 seconds
-  isRefreshing = false;
 
-  constructor(private reportService: ReportService) {}
+  // Auto-refresh properties
+  // Only keep loadOutages and WebSocket logic
+  // Remove all auto-refresh related properties and methods
+  // Only keep loadOutages and WebSocket logic
+
+  constructor(private reportService: ReportService, private webSocketService: WebSocketService) {}
 
   ngOnInit() {
     this.loadOutages();
-    this.startAutoRefresh();
+    
+    // Subscribe to WebSocket for real-time outage updates
+    this.webSocketService.onOutage().subscribe((outage: OutageReport) => {
+      console.log('Received new outage via WebSocket:', outage);
+      // Add new outage to the beginning of the list
+      this.outages.unshift(outage);
+      this.dataSource.data = this.outages;
+      
+      // Get location name for the new outage
+      if (outage.latitude && outage.longitude) {
+        this.getLocationName(outage.latitude, outage.longitude);
+      }
+    });
+    
+    // Subscribe to WebSocket for outage status updates
+    this.webSocketService.onOutageStatus().subscribe((updatedOutage: OutageReport) => {
+      console.log('Received outage status update via WebSocket:', updatedOutage);
+      // Find and update the existing outage
+      const index = this.outages.findIndex(o => o.id === updatedOutage.id);
+      if (index !== -1) {
+        this.outages[index] = updatedOutage;
+        this.dataSource.data = this.outages;
+      }
+    });
+    
+    // Subscribe to WebSocket for outage deletion
+    this.webSocketService.onOutageDeleted().subscribe((deletedOutageId: number) => {
+      console.log('Received outage deletion via WebSocket:', deletedOutageId);
+      // Remove the deleted outage from the list
+      this.outages = this.outages.filter(o => o.id !== deletedOutageId);
+      this.dataSource.data = this.outages;
+    });
   }
 
   ngOnDestroy() {
-    this.stopAutoRefresh();
+    // this.stopAutoRefresh(); // Removed auto-refresh
   }
 
-  private startAutoRefresh() {
-    this.refreshInterval = setInterval(() => {
-      if (!this.isRefreshing) {
-        this.refreshData();
-      }
-    }, this.REFRESH_INTERVAL);
-  }
+  // private startAutoRefresh() { // Removed auto-refresh
+  //   this.refreshInterval = setInterval(() => {
+  //     if (!this.isRefreshing) {
+  //       this.refreshData();
+  //     }
+  //   }, this.REFRESH_INTERVAL);
+  // }
 
-  private stopAutoRefresh() {
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
-      this.refreshInterval = null;
-    }
-  }
+  // private stopAutoRefresh() { // Removed auto-refresh
+  //   if (this.refreshInterval) {
+  //     clearInterval(this.refreshInterval);
+  //     this.refreshInterval = null;
+  //   }
+  // }
 
-  refreshData() {
-    this.isRefreshing = true;
-    this.loadOutages();
-    setTimeout(() => {
-      this.isRefreshing = false;
-    }, 1000);
-  }
+  // refreshData() { // Removed auto-refresh
+  //   this.isRefreshing = true;
+  //   this.loadOutages();
+  //   setTimeout(() => {
+  //     this.isRefreshing = false;
+  //   }, 1000);
+  // }
 
   ngAfterViewInit() {
     this.dataSource.paginator = this.paginator;

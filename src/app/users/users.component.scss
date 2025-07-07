@@ -82,8 +82,33 @@
         }
       }
     }
+
+    .button.primary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+      color: white;
+      border: none;
+      border-radius: 22px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+      }
+
+      .material-icons {
+        font-size: 1.1rem;
+      }
     }
   }
+}
 
 .table-container {
   background: var(--bg-primary);
@@ -91,11 +116,11 @@
   box-shadow: 0 10px 30px var(--shadow);
   overflow: hidden;
   border: 1px solid var(--border-color);
-    width: 100%;
+  width: 100%;
   box-sizing: border-box;
 
-    table {
-      width: 100%;
+  table {
+    width: 100%;
     background: transparent;
 
     ::ng-deep {
@@ -154,9 +179,9 @@
       color: var(--text-secondary);
     }
   }
-    }
+}
 
-    .status-badge {
+.role-badge {
   display: inline-block;
   padding: 4px 12px;
   border-radius: 20px;
@@ -165,22 +190,50 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   
-  &.status-pending {
-    background-color: rgba(255, 193, 7, 0.2);
-    color: #b8860b;
-    border: 1px solid rgba(255, 193, 7, 0.3);
-  }
-  
-  &.status-in-progress {
+  &.role-admin {
     background-color: rgba(13, 202, 240, 0.2);
     color: #0d6efd;
     border: 1px solid rgba(13, 202, 240, 0.3);
   }
   
-  &.status-resolved {
+  &.role-user {
     background-color: rgba(40, 167, 69, 0.2);
     color: #157347;
     border: 1px solid rgba(40, 167, 69, 0.3);
+  }
+  
+  &.role-moderator {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #b8860b;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  &.status-active {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #157347;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+  }
+  
+  &.status-inactive {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #b8860b;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+  }
+  
+  &.status-blocked {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
   }
 }
 
@@ -207,14 +260,14 @@
       height: 20px;
       line-height: 20px;
     }
-    }
   }
+}
 
-  .loading-spinner {
-    display: flex;
+.loading-spinner {
+  display: flex;
   flex-direction: column;
   align-items: center;
-    justify-content: center;
+  justify-content: center;
   padding: 40px;
   gap: 16px;
 
@@ -246,6 +299,11 @@
         .search-input {
           width: 100%;
         }
+      }
+
+      .button.primary {
+        width: 100%;
+        justify-content: center;
       }
     }
   }

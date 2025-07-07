@@ -1,23 +1,28 @@
 // Dashboard-style Feedback Component Styles
 .dashboard-container {
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
-  min-height: 100vh;
+  padding: 32px;
+  font-family: 'Segoe UI', sans-serif;
   background: var(--gradient-bg);
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-// Dashboard Header (matching users component)
+// Dashboard Header (matching outages component)
 .dashboard-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  padding: 20px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 24px;
+  flex-wrap: wrap;
   background: var(--bg-primary);
+  padding: 24px;
   border-radius: 16px;
-  box-shadow: 0 10px 30px var(--shadow);
+  box-shadow: 0 2px 12px var(--shadow);
   border: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
 
   .title-section {
     display: flex;
@@ -25,8 +30,11 @@
     gap: 12px;
 
     .title-icon {
-      font-size: 2.5rem;
+      font-size: 28px;
       color: var(--accent-color);
+      background: var(--bg-tertiary);
+      padding: 8px;
+      border-radius: 12px;
     }
 
     .dashboard-title {
@@ -120,6 +128,8 @@
   box-shadow: 0 10px 30px var(--shadow);
   overflow: hidden;
   border: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 // Table Styling

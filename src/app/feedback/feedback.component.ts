@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
@@ -13,6 +13,9 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FeedbackService, UserFeedback } from '../services/feedback.service';
 import { DialogComponent, DialogType } from '../shared/dialog/dialog.component';
+import { WebSocketService } from '../services/websocket.service'; // adjust path as needed
+import { Client, Message, Stomp } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 interface DialogConfig {
   isOpen: boolean;
@@ -64,48 +67,34 @@ export class FeedbackComponent implements OnInit, OnDestroy {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
-  constructor(private feedbackService: FeedbackService) {}
-
-  // Auto-refresh properties
-  private refreshInterval: any;
-  private readonly REFRESH_INTERVAL = 30000; // 30 seconds
-  isRefreshing = false;
+  constructor(private feedbackService: FeedbackService, private ws: WebSocketService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadFeedback();
-    this.startAutoRefresh();
+    this.ws.onFeedback().subscribe((feedback) => {
+      // Map the user data to flat properties for display
+      const mappedFeedback = {
+        ...feedback,
+        userName: feedback.user?.fullName || 'Unknown User',
+        userEmail: feedback.user?.email || 'Unknown Email'
+      };
+      
+      // Add the new feedback to the top of the list and update the table
+      this.feedback.unshift(mappedFeedback);
+      this.filteredFeedback.data = this.feedback;
+      if (this.paginator) this.filteredFeedback.paginator = this.paginator;
+      if (this.sort) this.filteredFeedback.sort = this.sort;
+    });
   }
 
   ngOnDestroy(): void {
-    this.stopAutoRefresh();
-  }
-
-  private startAutoRefresh(): void {
-    this.refreshInterval = setInterval(() => {
-      if (!this.isRefreshing) {
-        this.refreshData();
-      }
-    }, this.REFRESH_INTERVAL);
-  }
-
-  private stopAutoRefresh(): void {
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
-      this.refreshInterval = null;
-    }
-  }
-
-  refreshData(): void {
-    this.isRefreshing = true;
-    this.loadFeedback();
-    setTimeout(() => {
-      this.isRefreshing = false;
-    }, 1000);
+    // No auto-refresh to stop
   }
 
   ngAfterViewInit() {
-    this.filteredFeedback.paginator = this.paginator;
-    this.filteredFeedback.sort = this.sort;
+    if (this.paginator) this.filteredFeedback.paginator = this.paginator;
+    if (this.sort) this.filteredFeedback.sort = this.sort;
+    this.cdr.detectChanges();
 
     this.filteredFeedback.filterPredicate = (data: UserFeedback, filter: string) => {
       const searchTerm = filter.toLowerCase();
@@ -130,12 +119,18 @@ export class FeedbackComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.feedbackService.getAllFeedback().subscribe({
       next: (feedback) => {
+        console.log('Raw feedback data:', feedback);
         // Map the nested user data to flat properties for display
-        this.feedback = feedback.map(f => ({
-          ...f,
-          userName: f.user?.fullName || 'Unknown User',
-          userEmail: f.user?.email || 'Unknown Email'
-        }));
+        this.feedback = feedback.map(f => {
+          console.log('Processing feedback:', f);
+          console.log('User data:', f.user);
+          return {
+            ...f,
+            userName: f.user?.fullName || 'Unknown User',
+            userEmail: f.user?.email || 'Unknown Email'
+          };
+        });
+        console.log('Mapped feedback:', this.feedback);
         this.filteredFeedback.data = this.feedback;
         this.isLoading = false;
       },

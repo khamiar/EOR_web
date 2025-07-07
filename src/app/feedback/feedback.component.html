@@ -6,11 +6,6 @@
     </div>
     
     <div class="header-actions">
-      <button mat-raised-button color="accent" (click)="refreshData()" [disabled]="isRefreshing" 
-              class="refresh-button" matTooltip="Refresh Data">
-        <mat-icon [class.rotating]="isRefreshing">refresh</mat-icon>
-        {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
-      </button>
       
       <div class="search-container">
         <span class="material-icons search-icon">search</span>

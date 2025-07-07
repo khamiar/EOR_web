@@ -82,8 +82,33 @@
         }
       }
     }
+
+    .button.primary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+      color: white;
+      border: none;
+      border-radius: 22px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+      }
+
+      .material-icons {
+        font-size: 1.1rem;
+      }
     }
   }
+}
 
 .table-container {
   background: var(--bg-primary);
@@ -91,11 +116,11 @@
   box-shadow: 0 10px 30px var(--shadow);
   overflow: hidden;
   border: 1px solid var(--border-color);
-    width: 100%;
+  width: 100%;
   box-sizing: border-box;
 
-    table {
-      width: 100%;
+  table {
+    width: 100%;
     background: transparent;
 
     ::ng-deep {
@@ -129,34 +154,34 @@
   }
 }
 
-.user-info {
+.location-info {
   display: flex;
   align-items: center;
   gap: 12px;
 
-  .user-icon {
+  .location-icon {
     color: var(--accent-color);
     font-size: 1.5rem;
   }
 
-  .user-details {
+  .location-details {
     display: flex;
     flex-direction: column;
     gap: 2px;
 
-    .user-name {
+    .location-name {
       font-weight: 600;
       color: var(--text-primary);
     }
 
-    .user-email {
+    .location-address {
       font-size: 0.85rem;
       color: var(--text-secondary);
     }
   }
-    }
+}
 
-    .status-badge {
+.status-badge {
   display: inline-block;
   padding: 4px 12px;
   border-radius: 20px;
@@ -207,14 +232,14 @@
       height: 20px;
       line-height: 20px;
     }
-    }
   }
+}
 
-  .loading-spinner {
-    display: flex;
+.loading-spinner {
+  display: flex;
   flex-direction: column;
   align-items: center;
-    justify-content: center;
+  justify-content: center;
   padding: 40px;
   gap: 16px;
 
@@ -246,6 +271,11 @@
         .search-input {
           width: 100%;
         }
+      }
+
+      .button.primary {
+        width: 100%;
+        justify-content: center;
       }
     }
   }
