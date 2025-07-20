@@ -11,6 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../services/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Platform } from '@angular/cdk/platform';
 
 @Component({
   selector: 'app-login',
@@ -37,6 +38,7 @@ export class LoginComponent {
   errorMessage = '';
 
   constructor(
+    private platformlocation: Platform,
     private fb: FormBuilder,
     private router: Router,
     private authService: AuthService
@@ -44,6 +46,12 @@ export class LoginComponent {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required]
+    });
+
+    // Prevent back navigation on the login page
+    history.pushState(null, "", location.href);
+    window.addEventListener('popstate', () => {
+      history.pushState(null, '', location.href);
     });
   }
 

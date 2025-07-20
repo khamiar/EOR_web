@@ -59,7 +59,7 @@ export class MainLayoutComponent implements OnInit {
     {
       title: 'logout',
       icon: 'logout',
-      route: '/login'
+      action: 'logout'
     }
     
   ];
@@ -108,10 +108,4 @@ export class MainLayoutComponent implements OnInit {
       console.error('Navigation error:', err);
     });
   }
-
-  // viewProfile() {
-  //   // Navigate to profile page or open profile modal
-  //   // For now, we'll just show a console message
-  //   console.log('View profile clicked');
-  // }
 } 

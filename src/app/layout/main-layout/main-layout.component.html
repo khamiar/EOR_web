@@ -11,18 +11,25 @@
     </div>
     
     <nav class="sidebar-nav">
-      <a *ngFor="let item of menuItems" 
-         [routerLink]="item.route" 
-         routerLinkActive="active"
-         class="nav-item">
-        <span class="material-icons">{{ item.icon }}</span>
-        <span *ngIf="isSidebarOpen" class="nav-text">{{ item.title }}</span>
-      </a>
+      <ng-container *ngFor="let item of menuItems">
+        <!-- If the item is logout, use a routerLink and call logout() -->
+        <a *ngIf="item.action === 'logout'" 
+                (click)="logout()" 
+                class="nav-item"
+                type="button">
+          <span class="material-icons">{{ item.icon }}</span>
+          <span *ngIf="isSidebarOpen" class="nav-text">{{ item.title }}</span>
+        </a>
+        <!-- Otherwise, use a routerLink -->
+        <a *ngIf="!item.action" 
+           [routerLink]="item.route" 
+           routerLinkActive="active"
+           class="nav-item">
+          <span class="material-icons">{{ item.icon }}</span>
+          <span *ngIf="isSidebarOpen" class="nav-text">{{ item.title }}</span>
+        </a>
+      </ng-container>
     </nav>
-    <!-- <button mat-button color="accent" (click)="logout()">
-      <mat-icon>logout</mat-icon>
-      Logout
-    </button> -->
   </aside>
 
   <!-- Main Content -->
@@ -32,18 +39,7 @@
         <button mat-button  class="profile-button">
           <span class="material-icons">account_circle</span>
           <span class="user-name">Name: {{ currentUser?.fullName + ' Role: ' + currentUser?.role || 'Loading...' }}</span>
-          <!-- <span class="material-icons">arrow_drop_down</span> -->
         </button>
-        <!-- <mat-menu #profileMenu="matMenu">
-          <button mat-menu-item (click)="viewProfile()">
-            <span class="material-icons">person</span>
-            <span>View Profile</span>
-          </button>
-          <button mat-menu-item (click)="logout()">
-            <span class="material-icons">logout</span>
-            <span>Logout</span>
-          </button>
-        </mat-menu> -->
       </div>
     </header>
     

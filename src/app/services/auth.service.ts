@@ -77,6 +77,8 @@ export class AuthService {
     return true;
   }
 
+  
+
   getToken(): string | null {
     const token = localStorage.getItem('token');
     if (!token) return null;
@@ -110,5 +112,20 @@ export class AuthService {
       console.log('Clearing expired token');
       localStorage.removeItem('token');
     }
+  }
+
+  // Forgot Password: Step 1 - Request OTP
+  requestPasswordReset(email: string) {
+    return this.http.post(`${this.apiUrl}/request-reset`, { email });
+  }
+
+  // Forgot Password: Step 2 - Verify OTP
+  verifyOtp(email: string, otp: string) {
+    return this.http.post(`${this.apiUrl}/verify-otp`, { email, otp });
+  }
+
+  // Forgot Password: Step 3 - Reset Password
+  resetPassword(email: string, otp: string, newPassword: string) {
+    return this.http.post(`${this.apiUrl}/reset-password`, { email, otp, newPassword });
   }
 }

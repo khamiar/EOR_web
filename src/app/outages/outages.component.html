@@ -229,7 +229,7 @@
         <h4 class="section-subtitle">Attached Media</h4>
         <div class="media-container">
           <div class="media-wrapper">
-            <img *ngIf="selectedOutage?.mediaUrl && (selectedOutage.mediaUrl.endsWith('.jpg') || selectedOutage.mediaUrl.endsWith('.png'))" 
+            <img *ngIf="selectedOutage?.mediaUrl && (selectedOutage.mediaUrl.endsWith('.jpg') || selectedOutage.mediaUrl.endsWith('.png') || selectedOutage.mediaUrl.endsWith('.jpeg'))" 
               [src]="getMediaUrl(selectedOutage.mediaUrl)" 
               alt="Outage Image"
               class="outage-image"
