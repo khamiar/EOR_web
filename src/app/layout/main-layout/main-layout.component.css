@@ -91,6 +91,17 @@
   font-weight: 500;
 }
 
+/* Badge */
+.dot {
+  height: 10px;
+  width: 10px;
+  background-color: #ff4081;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+
 /* Main Content Styles */
 .main-content {
   flex: 1;

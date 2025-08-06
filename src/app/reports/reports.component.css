@@ -1,115 +1,15 @@
-.reports-container {
-  padding: 20px;
-  background: var(--gradient-bg);
-  min-height: 100vh;
+.statistics-section {
+  margin-top: 2rem;
 }
 
-.header {
+.charts-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: space-around;
 }
 
-.generate-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
+.chart-box {
+  flex: 1 1 400px;
+  max-width: 600px;
 }
-
-.generate-button:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-}
-
-.reports-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.report-card {
-  background: var(--bg-primary);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px var(--shadow);
-  padding: 20px;
-  border: 1px solid var(--border-color);
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.card-header .material-icons {
-  font-size: 24px;
-  color: var(--accent-color);
-}
-
-.card-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: var(--text-primary);
-}
-
-.card-content {
-  margin-bottom: 16px;
-}
-
-.date {
-  color: var(--text-secondary);
-  font-size: 14px;
-  margin: 8px 0;
-}
-
-.status {
-  font-size: 14px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  display: inline-block;
-}
-
-.status.completed {
-  background: #d4edda;
-  color: #155724;
-}
-
-.status.pending {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.card-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.action-button {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.action-button:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--accent-color);
-  transform: translateY(-1px);
-} 

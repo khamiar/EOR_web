@@ -5,6 +5,9 @@ import * as L from 'leaflet';
 import { ReportService } from '../services/report.service.js';
 import { MapSettingsService } from '../services/map-settings.service';
 import { Subscription } from 'rxjs';
+import { WebSocketService } from '../services/websocket.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+
 
 
 
@@ -64,12 +67,56 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private mapSettingsSubscription?: Subscription;
 
 constructor(
+  private websocketService: WebSocketService,
   private reportService: ReportService,
-  private mapSettingsService: MapSettingsService
+  private mapSettingsService: MapSettingsService,
+  private snackbar: MatSnackBar,
 ) {}
 
   ngOnInit() {
     this.loadOutages();
+    this.listenToWebSocketEvents();
+
+    // WebSocket events
+    this.websocketService.onOutage().subscribe((newOutage) => {
+      console.log('📡 New outage received:', newOutage);
+      this.snackbar.open(`New outage reported: ${newOutage.title}`, 'Close', {
+        duration: 4000,
+        verticalPosition: 'top',
+        panelClass: ['snackbar-success']
+      });
+  
+      const outage: Outage = {
+        id: newOutage.id.toString(),
+        title: newOutage.title,
+        description: newOutage.description,
+        location: {
+          lat: newOutage.latitude,
+          lng: newOutage.longitude
+        },
+        status: this.mapStatus(newOutage.status),
+        reportedAt: newOutage.reportedAt,
+        resolvedAt: newOutage.resolvedAt,
+        resolutionNotes: newOutage.resolutionNotes,
+        reporter: newOutage.reporter,
+        media: newOutage.mediaUrl ? { type: 'image', url: newOutage.mediaUrl } : undefined,
+        isRecent: this.isRecentOutage(newOutage)
+      };
+  
+      // Add to list
+      this.outages.push(outage);
+      this.updateStatistics();
+      this.getLocationName(outage.location.lat, outage.location.lng);
+  
+      // 🗺️ Add marker and zoom to it
+      const markerInstance = L.marker([outage.location.lat, outage.location.lng])
+        .addTo(this.map)
+        .bindPopup(outage.title)
+        .on('click', () => this.showOutageDetails(outage));
+      
+      markerInstance.openPopup(); // Show popup immediately
+      this.map.setView([outage.location.lat, outage.location.lng], 15); // Auto-zoom
+    });
   }
 
   ngAfterViewInit() {
@@ -117,7 +164,14 @@ constructor(
         resolvedAt: report.resolvedAt,
         resolutionNotes: report.resolutionNotes,
         reporter: report.reporter,
-        media: report.mediaUrl ? { type: 'image', url: report.mediaUrl } : undefined
+        media: report.mediaUrl
+        ? {
+            type: report.mediaUrl.endsWith('.mp4') ? 'video' : 'image',
+            url: report.mediaUrl
+          }
+        : undefined
+      
+
       }));
   
       this.updateStatistics();
@@ -186,7 +240,7 @@ constructor(
   
   
   
-
+// Update statistics
   private updateStatistics() {
     this.totalOutages = this.outages.length;
     this.resolvedOutages = this.outages.filter(o => o.status === 'resolved').length;
@@ -196,6 +250,7 @@ constructor(
     // this.totalUsers = 100;
   }
 
+  // Add markers for active outages
   private addOutageMarkers() {
     if (!this.map) return;
   
@@ -210,7 +265,8 @@ constructor(
     const activeOutages = this.outages.filter(outage => 
       outage.status === 'pending' || outage.status === 'inprogress'
     );
-
+    
+// Add markers for active outages
     activeOutages.forEach(outage => {
       const markerInstance = marker([outage.location.lat, outage.location.lng])
         .addTo(this.map)
@@ -234,8 +290,47 @@ constructor(
       isRecent: this.isRecentOutage(outage)
     };
   }
-
+// Modal
   closeModal() {
     this.selectedOutage = null;
   }
+
+  // WebSocket events
+  private listenToWebSocketEvents() {
+    this.websocketService.onOutage().subscribe((data) => {
+      const newOutage: Outage = {
+        id: data.id.toString(),
+        title: data.title,
+        description: data.description,
+        location: { lat: data.latitude, lng: data.longitude },
+        status: this.mapStatus(data.status),
+        reportedAt: data.reportedAt,
+        resolvedAt: data.resolvedAt,
+        reporter: data.reporter,
+        media: data.mediaUrl ? { type: 'image', url: data.mediaUrl } : undefined
+      };
+      this.outages.push(newOutage);
+      this.getLocationName(data.latitude, data.longitude);
+      this.updateStatistics();
+      this.addOutageMarkers();
+    });
+  
+    this.websocketService.onOutageStatus().subscribe((data) => {
+      const outage = this.outages.find(o => o.id === data.id.toString());
+      if (outage) {
+        outage.status = this.mapStatus(data.status);
+        outage.resolvedAt = data.resolvedAt || undefined;
+        outage.resolutionNotes = data.resolutionNotes || '';
+        this.updateStatistics();
+        this.addOutageMarkers();
+      }
+    });
+  
+    this.websocketService.onOutageDeleted().subscribe((id) => {
+      this.outages = this.outages.filter(o => o.id !== id.toString());
+      this.updateStatistics();
+      this.addOutageMarkers();
+    });
+  }
+  
 }

@@ -1,21 +1,28 @@
-import { Component, OnInit, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ViewChild,
+  ChangeDetectorRef,
+  AfterViewInit
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+
 import { FeedbackService, UserFeedback } from '../services/feedback.service';
 import { DialogComponent, DialogType } from '../shared/dialog/dialog.component';
-import { WebSocketService } from '../services/websocket.service'; // adjust path as needed
-import { Client, Message, Stomp } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
+import { WebSocketService } from '../services/websocket.service';
+import { Subscription } from 'rxjs';
 
 interface DialogConfig {
   isOpen: boolean;
@@ -41,18 +48,20 @@ interface DialogConfig {
     DialogComponent,
     MatPaginatorModule,
     MatSortModule,
-    MatTooltipModule
+    MatSnackBarModule,
+    MatTooltipModule,
   ],
   templateUrl: './feedback.component.html',
   styleUrls: ['./feedback.component.scss']
 })
-export class FeedbackComponent implements OnInit, OnDestroy {
+export class FeedbackComponent implements OnInit, OnDestroy, AfterViewInit {
   feedback: UserFeedback[] = [];
   filteredFeedback = new MatTableDataSource<UserFeedback>([]);
   isLoading = false;
   searchTerm = '';
   selectedFeedback: UserFeedback | null = null;
   selectedStatus: string = '';
+  displayedColumns = ['userName', 'subject', 'status', 'actions'];
 
   dialogConfig: DialogConfig = {
     isOpen: false,
@@ -62,76 +71,76 @@ export class FeedbackComponent implements OnInit, OnDestroy {
     confirmText: 'OK'
   };
 
-  displayedColumns = ['userName', 'subject', 'status', 'actions'];
-
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
-  constructor(private feedbackService: FeedbackService, private ws: WebSocketService, private cdr: ChangeDetectorRef) {}
+  private feedbackSub?: Subscription;
+
+  constructor(
+    private feedbackService: FeedbackService,
+    private ws: WebSocketService,
+    private cdr: ChangeDetectorRef,
+    private snackbar: MatSnackBar
+  ) {}
 
   ngOnInit(): void {
     this.loadFeedback();
-    this.ws.onFeedback().subscribe((feedback) => {
-      // Map the user data to flat properties for display
-      const mappedFeedback = {
+
+    this.feedbackSub = this.ws.onFeedback().subscribe((feedback) => {
+      const mapped = {
         ...feedback,
         userName: feedback.user?.fullName || 'Unknown User',
         userEmail: feedback.user?.email || 'Unknown Email'
       };
-      
-      // Add the new feedback to the top of the list and update the table
-      this.feedback.unshift(mappedFeedback);
+      this.feedback.unshift(mapped);
       this.filteredFeedback.data = this.feedback;
-      if (this.paginator) this.filteredFeedback.paginator = this.paginator;
-      if (this.sort) this.filteredFeedback.sort = this.sort;
+
+      this.attachPaginatorAndSort();
+
+      this.snackbar.open(`📨 New feedback from ${mapped.userName}`, 'Close', {
+        duration: 4000,
+        verticalPosition: 'top',
+        panelClass: ['snackbar-success']
+      });
     });
   }
 
-  ngOnDestroy(): void {
-    // No auto-refresh to stop
+  ngAfterViewInit(): void {
+    this.attachPaginatorAndSort();
+
+    this.filteredFeedback.filterPredicate = (data, filter) => {
+      const term = filter.trim().toLowerCase();
+      return data.subject.toLowerCase().includes(term) ||
+        data.message.toLowerCase().includes(term) ||
+        (data.userName?.toLowerCase().includes(term) ?? false);
+    };
+
+    this.filteredFeedback.sortingDataAccessor = (item, property) =>
+      property === 'userName' ? item.userName : (item as any)[property];
+
+    this.cdr.detectChanges();
   }
 
-  ngAfterViewInit() {
-    if (this.paginator) this.filteredFeedback.paginator = this.paginator;
-    if (this.sort) this.filteredFeedback.sort = this.sort;
-    this.cdr.detectChanges();
+  ngOnDestroy(): void {
+    this.feedbackSub?.unsubscribe();
+  }
 
-    this.filteredFeedback.filterPredicate = (data: UserFeedback, filter: string) => {
-      const searchTerm = filter.toLowerCase();
-
-      if (!searchTerm) return true;
-
-      return data.subject.toLowerCase().includes(searchTerm) ||
-        data.message.toLowerCase().includes(searchTerm) ||
-        (data.userName?.toLowerCase().includes(searchTerm) ?? false) ||
-        (data.user?.fullName?.toLowerCase().includes(searchTerm) ?? false);
-    };
-
-    this.filteredFeedback.sortingDataAccessor = (item, property) => {
-      switch (property) {
-        case 'userName': return item.userName;
-        default: return (item as any)[property];
-      }
-    };
+  private attachPaginatorAndSort(): void {
+    this.filteredFeedback.paginator = this.paginator;
+    this.filteredFeedback.sort = this.sort;
   }
 
   loadFeedback(): void {
     this.isLoading = true;
     this.feedbackService.getAllFeedback().subscribe({
       next: (feedback) => {
-        console.log('Raw feedback data:', feedback);
-        // Map the nested user data to flat properties for display
-        this.feedback = feedback.map(f => {
-          console.log('Processing feedback:', f);
-          console.log('User data:', f.user);
-          return {
-            ...f,
-            userName: f.user?.fullName || 'Unknown User',
-            userEmail: f.user?.email || 'Unknown Email'
-          };
-        });
-        console.log('Mapped feedback:', this.feedback);
+        this.feedback = feedback.map(f => ({
+          ...f,
+          userName: f.user?.fullName || 'Unknown User',
+          userEmail: f.user?.email || 'Unknown Email'
+        }));
         this.filteredFeedback.data = this.feedback;
+        this.attachPaginatorAndSort();
         this.isLoading = false;
       },
       error: (error) => {
@@ -143,11 +152,8 @@ export class FeedbackComponent implements OnInit, OnDestroy {
   }
 
   applyFilter(): void {
-    this.filteredFeedback.filter = this.searchTerm;
-
-    if (this.filteredFeedback.paginator) {
-      this.filteredFeedback.paginator.firstPage();
-    }
+    this.filteredFeedback.filter = this.searchTerm.trim().toLowerCase();
+    if (this.filteredFeedback.paginator) this.filteredFeedback.paginator.firstPage();
   }
 
   onSearch(): void {
@@ -166,31 +172,27 @@ export class FeedbackComponent implements OnInit, OnDestroy {
 
   updateFeedbackStatus(): void {
     if (!this.selectedFeedback) return;
-    
+
     this.feedbackService.updateFeedbackStatus(this.selectedFeedback.id, this.selectedStatus as any).subscribe({
-      next: (updatedFeedback) => {
-        // Update the feedback in the list with complete data
+      next: (updated) => {
         const index = this.feedback.findIndex(f => f.id === this.selectedFeedback!.id);
         if (index !== -1) {
-          // Preserve existing user data and only update status-related fields
           this.feedback[index] = {
-            ...this.feedback[index], // Keep existing user data
-            status: updatedFeedback.status,
-            response: updatedFeedback.response,
-            respondedAt: updatedFeedback.respondedAt,
-            respondedBy: updatedFeedback.respondedBy
+            ...this.feedback[index],
+            status: updated.status,
+            response: updated.response,
+            respondedAt: updated.respondedAt,
+            respondedBy: updated.respondedBy
           };
           this.filteredFeedback.data = this.feedback;
           this.applyFilter();
         }
         this.showDialog('Success', 'Status updated successfully', 'success');
       },
-      error: (error) => {
-        console.error('Error updating status:', error);
-        this.showDialog('Error', 'Failed to update status', 'error');
-      }
+      error: () => this.showDialog('Error', 'Failed to update status', 'error')
     });
   }
+  
 
   deleteFeedback(feedback: UserFeedback): void {
     this.showDialog(
@@ -201,18 +203,12 @@ export class FeedbackComponent implements OnInit, OnDestroy {
       () => {
         this.feedbackService.deleteFeedback(feedback.id).subscribe({
           next: () => {
-            // Remove from the main array
             this.feedback = this.feedback.filter(f => f.id !== feedback.id);
-            // Update the data source
             this.filteredFeedback.data = this.feedback;
-            // Apply any existing filter
             this.applyFilter();
             this.showDialog('Success', 'Feedback deleted successfully', 'success');
           },
-          error: (error) => {
-            console.error('Error deleting feedback:', error);
-            this.showDialog('Error', 'Failed to delete feedback', 'error');
-          }
+          error: () => this.showDialog('Error', 'Failed to delete feedback', 'error')
         });
       }
     );
@@ -224,7 +220,7 @@ export class FeedbackComponent implements OnInit, OnDestroy {
     type: DialogType = 'info',
     confirmText: string = 'OK',
     onConfirm?: () => void
-  ) {
+  ): void {
     this.dialogConfig = {
       isOpen: true,
       title,
@@ -235,18 +231,16 @@ export class FeedbackComponent implements OnInit, OnDestroy {
     };
   }
 
-  onDialogClose() {
+  onDialogClose(): void {
     this.dialogConfig.isOpen = false;
   }
 
-  onDialogConfirm() {
-    if (this.dialogConfig.onConfirm) {
-      this.dialogConfig.onConfirm();
-    }
+  onDialogConfirm(): void {
+    if (this.dialogConfig.onConfirm) this.dialogConfig.onConfirm();
     this.dialogConfig.isOpen = false;
   }
 
-  onDialogCancel() {
+  onDialogCancel(): void {
     this.dialogConfig.isOpen = false;
   }
-} 
+}

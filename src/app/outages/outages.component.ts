@@ -18,6 +18,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { environment } from '../../environments/environment';
 
 const MATERIAL_MODULES = [
   MatTableModule,
@@ -68,6 +69,7 @@ export class OutagesComponent implements OnInit, OnDestroy {
   dialogConfig: DialogConfig = {
     isOpen: false,
     title: '',
+
     message: '',
     type: 'info',
     confirmText: 'OK'
@@ -81,7 +83,7 @@ export class OutagesComponent implements OnInit, OnDestroy {
   ];
 
   dataSource = new MatTableDataSource<OutageReport>([]);
-  displayedColumns = ['id', 'title', 'location', 'status', 'reportedAt', 'actions'];
+  displayedColumns = ['id', 'title', 'region', 'location', 'status', 'reportedAt', 'actions'];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   isMediaLoading: boolean = false;
@@ -92,7 +94,7 @@ export class OutagesComponent implements OnInit, OnDestroy {
   // Only keep loadOutages and WebSocket logic
   // Remove all auto-refresh related properties and methods
   // Only keep loadOutages and WebSocket logic
-
+  
   constructor(private reportService: ReportService, private webSocketService: WebSocketService) {}
 
   ngOnInit() {
@@ -132,31 +134,8 @@ export class OutagesComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    // this.stopAutoRefresh(); // Removed auto-refresh
   }
 
-  // private startAutoRefresh() { // Removed auto-refresh
-  //   this.refreshInterval = setInterval(() => {
-  //     if (!this.isRefreshing) {
-  //       this.refreshData();
-  //     }
-  //   }, this.REFRESH_INTERVAL);
-  // }
-
-  // private stopAutoRefresh() { // Removed auto-refresh
-  //   if (this.refreshInterval) {
-  //     clearInterval(this.refreshInterval);
-  //     this.refreshInterval = null;
-  //   }
-  // }
-
-  // refreshData() { // Removed auto-refresh
-  //   this.isRefreshing = true;
-  //   this.loadOutages();
-  //   setTimeout(() => {
-  //     this.isRefreshing = false;
-  //   }, 1000);
-  // }
 
   ngAfterViewInit() {
     this.dataSource.paginator = this.paginator;
@@ -164,6 +143,7 @@ export class OutagesComponent implements OnInit, OnDestroy {
     this.dataSource.sortingDataAccessor = (item, property) => {
       switch (property) {
         case 'title': return item.title;
+        case 'region': return item.region || '';
         case 'location': return item.locationName || '';
         case 'status': return item.status;
         case 'reportedAt': return new Date(item.reportedAt);
@@ -198,7 +178,6 @@ export class OutagesComponent implements OnInit, OnDestroy {
       return this.locationCache.get(cacheKey) || 'Unknown Location';
     }
 
-    // Use OpenStreetMap Nominatim API for reverse geocoding
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`;
     
     fetch(url, {
@@ -258,7 +237,6 @@ export class OutagesComponent implements OnInit, OnDestroy {
           this.dataSource.data = [...this.outages];
         }
         
-        // Show success message
         this.dialogConfig = {
           isOpen: true,
           title: 'Success',
@@ -267,7 +245,6 @@ export class OutagesComponent implements OnInit, OnDestroy {
           confirmText: 'OK'
         };
 
-        // Close the status dialog
         this.closeStatusDialog();
       },
       error: (error) => {
@@ -311,42 +288,90 @@ export class OutagesComponent implements OnInit, OnDestroy {
       }
     );
   }
+private extractRegion(region: string): string {
+  if (!region) return 'Unknown';
+  const parts = region.split(',');
+  return parts.length > 1 ? parts[1].trim() : 'Unknown';
+}
 
   async generateReport() {
-    if (!this.fromDate || !this.toDate) {
-      this.showDialog('Error', 'Please select both from and to dates', 'error');
-      return;
-    }
+  if (!this.fromDate || !this.toDate) {
+    this.showDialog('Error', 'Please select both from and to dates', 'error');
+    return;
+  }
 
-    // Validate date range
-    const from = new Date(this.fromDate);
-    const to = new Date(this.toDate);
-    
-    if (from > to) {
-      this.showDialog('Error', 'From date cannot be later than To date', 'error');
-      return;
-    }
+  // Validate date range
+  const from = new Date(this.fromDate);
+  const to = new Date(this.toDate);
 
-    try {
-    // Filter outages based on date range
+  if (from > to) {
+    this.showDialog('Error', 'From date cannot be later than To date', 'error');
+    return;
+  }
+
+  try {
+    // Filter outages within date range
     const filteredOutages = this.outages.filter(outage => {
       const reportedDate = new Date(outage.reportedAt);
       return reportedDate >= from && reportedDate <= to;
     });
 
     if (filteredOutages.length === 0) {
-        this.showDialog('Warning', 'No outages found in the selected date range', 'info');
+      this.showDialog('Warning', 'No outages found in the selected date range', 'info');
       return;
     }
 
-      await this.reportService.generateReport(filteredOutages, this.fromDate, this.toDate, this.reportFormat);
-      this.showDialog('Success', 'Report generated successfully', 'success');
-    } catch (error) {
-      console.error('Error generating report:', error);
-      let errorMessage = error instanceof Error ? error.message : 'Failed to generate report. Please try again.';
-      this.showDialog('Error', errorMessage, 'error');
-    }
+    // 🔍 Compute Most Frequent Region
+    const regionCount: Record<string, number> = {};
+      for (const outage of filteredOutages) {
+        const region = this.extractRegion(outage.location); // or outage.region if direct
+        regionCount[region] = (regionCount[region] || 0) + 1;
+      }
+
+      // Find max frequency
+      const maxRegionCount = Math.max(...Object.values(regionCount));
+
+      // Get all regions with max count
+      const mostAffectedRegions = Object.entries(regionCount)
+        .filter(([_, count]) => count === maxRegionCount)
+        .map(([region]) => region);
+
+
+    // 🔍 Compute Most Frequent Type (title)
+    const typeCount: Record<string, number> = {};
+      for (const outage of filteredOutages) {
+        const type = outage.title || 'Unknown';
+        typeCount[type] = (typeCount[type] || 0) + 1;
+      }
+
+      const maxTypeCount = Math.max(...Object.values(typeCount));
+
+      const mostFrequentTitles = Object.entries(typeCount)
+        .filter(([_, count]) => count === maxTypeCount)
+        .map(([type]) => type);
+
+
+    // 📄 Generate report using analytics
+    await this.reportService.generateReport(
+      filteredOutages,
+      this.fromDate,
+      this.toDate,
+      this.reportFormat,
+      {
+        mostAffectedRegions,
+        mostFrequentTitles
+      }
+    );
+
+    this.showDialog('Success', 'Report generated successfully', 'success');
+
+  } catch (error) {
+    console.error('Error generating report:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate report. Please try again.';
+    this.showDialog('Error', errorMessage, 'error');
   }
+}
+
 
   viewOutageDetails(outage: OutageReport) {
     this.selectedOutage = outage;
@@ -425,15 +450,27 @@ export class OutagesComponent implements OnInit, OnDestroy {
     }
   }
 
-  getMediaUrl(mediaUrl: string | undefined): string {
-    if (!mediaUrl) return '';
-    // If it's already a full URL, return as is
-    if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
-      return mediaUrl;
+  getMediaUrl(mediaFilename: string | undefined): string {
+    if (!mediaFilename) return '';
+  
+    // If already a full URL, just return it
+    if (mediaFilename.startsWith('http://') || mediaFilename.startsWith('https://')) {
+      return mediaFilename;
     }
-    // Otherwise, construct the full URL with the backend base URL
-    return `http://localhost:8080/api/media/${mediaUrl}`;
+  
+    const trimmedBase = environment.mediaUrl.replace(/\/+$/, '');
+  
+    // Remove leading slashes and 'uploads/' if present
+    let cleanedFile = mediaFilename.replace(/^\/+/, '');
+    if (cleanedFile.startsWith('uploads/')) {
+      cleanedFile = cleanedFile.substring('uploads/'.length);
+    }
+  
+    return `${trimmedBase}/${cleanedFile}`;
   }
+
+  
+  
 
   onMediaLoad(event: Event) {
     this.isMediaLoading = false;
@@ -462,4 +499,57 @@ export class OutagesComponent implements OnInit, OnDestroy {
     const fullUrl = this.getMediaUrl(url);
     window.open(fullUrl, '_blank');
   }
+
+  async shareOutage(outage: OutageReport) {
+    this.selectedOutage = outage;
+
+    const lat = outage.latitude;
+    const lng = outage.longitude;
+
+    // Generate Google Maps link
+    const mapsLink = (lat && lng)
+      ? `https://www.google.com/maps?q=${lat},${lng}`
+      : 'Location not available';
+
+    // 🔥 Get actual human-readable location
+    let locationName = 'Location not available';
+    if (lat && lng) {
+      locationName = await this.getLocationName(lat, lng);
+    }
+
+    // 🧾 Format the report
+    const reportInfo = `
+  📢 *EOReporter - Outage Report*
+
+  📝 Description: ${outage.description || 'No Description'}
+  📍 Region: ${outage.region || 'Not Provided'}
+  📌 Location: ${locationName}
+  🗺️ Google Maps: ${mapsLink}
+  👤 Reported By: ${outage.reporter?.fullName || 'Anonymous'}
+  📞 Phone: ${outage.reporter?.phoneNumber || 'Not Provided'}
+    `.trim();
+
+    // 🔗 Share via Web Share API if available
+    if (navigator.share) {
+      navigator.share({
+        title: 'Outage Report - EOReporter',
+        text: reportInfo,
+        url: mapsLink !== 'Location not available' ? mapsLink : undefined,
+      }).then(() => {
+        console.log('Shared successfully!');
+      }).catch(err => {
+        console.error('Error sharing:', err);
+      });
+    } else {
+      // 📋 Fallback: copy to clipboard & open WhatsApp
+      await navigator.clipboard.writeText(reportInfo);
+      alert('Outage info copied to clipboard!');
+
+      const encodedMsg = encodeURIComponent(reportInfo);
+      window.open(`https://wa.me/?text=${encodedMsg}`, '_blank');
+    }
+  }
+
+
+
 }

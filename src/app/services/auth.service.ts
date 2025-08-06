@@ -1,4 +1,3 @@
-// auth.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -27,7 +26,7 @@ interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8080/api/auth'; // Replace with your actual backend URL
+  private apiUrl = 'http://localhost:8080/api/auth'; // Backend URL
 
   constructor(private http: HttpClient) {
     this.clearExpiredToken();
@@ -77,8 +76,7 @@ export class AuthService {
     return true;
   }
 
-  
-
+  // Get token and check expiration
   getToken(): string | null {
     const token = localStorage.getItem('token');
     if (!token) return null;

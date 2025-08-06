@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { UserService, User } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { WebSocketService } from '../../services/websocket.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -52,6 +53,11 @@ export class MainLayoutComponent implements OnInit {
       route: '/users'
     },
     {
+      title: 'Report',
+      icon: 'report',
+      action: 'report'
+    },
+    {
       title: 'Settings',
       icon: 'settings',
       route: '/settings'
@@ -65,19 +71,53 @@ export class MainLayoutComponent implements OnInit {
   ];
 
   constructor(
+    private websocketService: WebSocketService,
     private userService: UserService,
     private authService: AuthService,
     private router: Router,
     private themeService: ThemeService
   ) {}
 
+  // WebSocket events
+  hasNewFeedback = false;
+  hasNewAnnouncement = false;
+  hasNewOutage = false;
+
+
+
+
+
+
   ngOnInit() {
     this.loadCurrentUser();
-    // Add navigation event listener
+  
+    this.websocketService.onFeedback().subscribe((feedback) => {
+      console.log('📬 New Feedback:', feedback);
+      this.hasNewFeedback = true;
+    });
+  
+    this.websocketService.onAnnouncement().subscribe((announcement) => {
+      console.log('📢 New Announcement:', announcement);
+      this.hasNewAnnouncement = true;
+    });
+
+    this.websocketService.onOutage().subscribe((outage) => {
+      console.log('📡 New Outage:', outage);
+      this.hasNewOutage = true;
+    });
+  
     this.router.events.subscribe(event => {
+      // Reset notification badges when navigating to the corresponding pages
+      const currentUrl = this.router.url;
+      if (currentUrl.includes('/feedback')) this.hasNewFeedback = false;
+      if (currentUrl.includes('/announcements')) this.hasNewAnnouncement = false;
+      if (currentUrl.includes('/outages')) this.hasNewOutage = false;
+
+      // Add navigation event listener
       console.log('Navigation event:', event);
     });
   }
+  
 
   loadCurrentUser() {
     this.userService.getCurrentUser().subscribe({

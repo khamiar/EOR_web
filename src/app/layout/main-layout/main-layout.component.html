@@ -12,23 +12,37 @@
     
     <nav class="sidebar-nav">
       <ng-container *ngFor="let item of menuItems">
-        <!-- If the item is logout, use a routerLink and call logout() -->
+        <!-- Logout -->
         <a *ngIf="item.action === 'logout'" 
-                (click)="logout()" 
-                class="nav-item"
-                type="button">
+           (click)="logout()" 
+           class="nav-item"
+           type="button">
           <span class="material-icons">{{ item.icon }}</span>
           <span *ngIf="isSidebarOpen" class="nav-text">{{ item.title }}</span>
         </a>
-        <!-- Otherwise, use a routerLink -->
+      
+        <!-- Regular links with conditional badges -->
         <a *ngIf="!item.action" 
            [routerLink]="item.route" 
            routerLinkActive="active"
            class="nav-item">
           <span class="material-icons">{{ item.icon }}</span>
-          <span *ngIf="isSidebarOpen" class="nav-text">{{ item.title }}</span>
+          <span *ngIf="isSidebarOpen" class="nav-text">
+            {{ item.title }}
+            <span *ngIf="item.title === 'Feedback Manager' && hasNewFeedback" class="dot"></span>
+            <span *ngIf="item.title === 'Announcements' && hasNewAnnouncement" class="dot"></span>
+            <span *ngIf="item.title === 'Outages Manager' && hasNewOutage" class="dot"></span>
+          </span>
         </a>
+        <!-- <div class="user-info">
+        <button mat-button  class="profile-button">
+          <span class="material-icons">account_circle</span>
+          <span class="user-name">Name: {{ currentUser?.fullName || 'Loading...' }}</span>
+          <span class="user-name">Role: {{currentUser?.role || 'Loading...' }}</span>
+        </button>
+      </div> -->
       </ng-container>
+      
     </nav>
   </aside>
 
