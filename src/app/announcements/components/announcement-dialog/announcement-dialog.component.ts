@@ -61,7 +61,6 @@ export class AnnouncementDialogComponent implements OnInit {
       attachmentUrl: [''],
       publishDate: [null],
       sendNotification: [false],
-      postedBy: ['', Validators.required],
       postedAt: [new Date(), Validators.required]
     });
   }
@@ -70,9 +69,7 @@ export class AnnouncementDialogComponent implements OnInit {
     if (this.data) {
       this.form.patchValue(this.data);
     }
-    this.userService.getCurrentUser().subscribe((user: User) => {
-      this.form.patchValue({ postedBy: user.fullName });
-    });
+    // Don't set postedBy - let the backend set it from the authenticated user
   }
 
   async onSubmit() {
@@ -100,13 +97,21 @@ export class AnnouncementDialogComponent implements OnInit {
         }
 
         // Prepare form data with proper date formatting
-        const formData = {
-          ...this.form.value,
+        const formData: any = {
+          title: this.form.get('title')?.value,
+          content: this.form.get('content')?.value,
+          category: this.form.get('category')?.value,
+          status: this.form.get('status')?.value,
           attachmentUrl,
-          publishDate: this.form.get('publishDate')?.value ? 
-            new Date(this.form.get('publishDate')?.value + 'T00:00:00').toISOString() : null,
+          sendNotification: this.form.get('sendNotification')?.value,
           postedAt: new Date().toISOString()
         };
+
+        // Handle publishDate separately to avoid type issues
+        const publishDateValue = this.form.get('publishDate')?.value;
+        if (publishDateValue) {
+          formData.publishDate = new Date(publishDateValue + 'T00:00:00').toISOString();
+        }
 
         console.log('Submitting announcement:', formData);
 

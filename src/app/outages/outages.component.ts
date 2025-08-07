@@ -170,42 +170,40 @@ export class OutagesComponent implements OnInit, OnDestroy {
     });
   }
 
-  getLocationName(latitude: number, longitude: number): string {
-    const cacheKey = `${latitude},${longitude}`;
-    
-    // Check if we already have this location in cache
-    if (this.locationCache.has(cacheKey)) {
-      return this.locationCache.get(cacheKey) || 'Unknown Location';
-    }
-
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`;
-    
-    fetch(url, {
-      headers: {
-        'Accept-Language': 'en-US,en;q=0.9',
-        'User-Agent': 'EOReporter/1.0'
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      const locationName = data.display_name || 'Unknown Location';
-      this.locationCache.set(cacheKey, locationName);
-      
-      // Update the outage with the location name
-      const outage = this.outages.find(o => 
-        o.latitude === latitude && o.longitude === longitude
-      );
-      if (outage) {
-        outage.locationName = locationName;
-      }
-    })
-    .catch(error => {
-      console.error('Error getting location name:', error);
-      this.locationCache.set(cacheKey, 'Location lookup failed');
-    });
-
-    return 'Loading location...';
+  getLocationName(latitude: number, longitude: number): Promise<string> {
+  const cacheKey = `${latitude},${longitude}`;
+  
+  if (this.locationCache.has(cacheKey)) {
+    return Promise.resolve(this.locationCache.get(cacheKey) || 'Unknown Location');
   }
+
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`;
+  
+  return fetch(url, {
+    headers: {
+      'Accept-Language': 'en-US,en;q=0.9',
+      'User-Agent': 'EOReporter/1.0'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    const locationName = data.display_name || 'Unknown Location';
+    this.locationCache.set(cacheKey, locationName);
+    
+    const outage = this.outages.find(o => 
+      o.latitude === latitude && o.longitude === longitude
+    );
+    if (outage) {
+      outage.locationName = locationName;
+    }
+    return locationName;
+  })
+  .catch(error => {
+    console.error('Error getting location name:', error);
+    this.locationCache.set(cacheKey, 'Location lookup failed');
+    return 'Location lookup failed';
+  });
+}
 
   openStatusUpdateDialog(outage: OutageReport) {
     this.selectedOutageForStatus = outage;
@@ -294,13 +292,12 @@ private extractRegion(region: string): string {
   return parts.length > 1 ? parts[1].trim() : 'Unknown';
 }
 
-  async generateReport() {
+async generateReport() {
   if (!this.fromDate || !this.toDate) {
     this.showDialog('Error', 'Please select both from and to dates', 'error');
     return;
   }
 
-  // Validate date range
   const from = new Date(this.fromDate);
   const to = new Date(this.toDate);
 
@@ -310,7 +307,6 @@ private extractRegion(region: string): string {
   }
 
   try {
-    // Filter outages within date range
     const filteredOutages = this.outages.filter(outage => {
       const reportedDate = new Date(outage.reportedAt);
       return reportedDate >= from && reportedDate <= to;
@@ -321,54 +317,47 @@ private extractRegion(region: string): string {
       return;
     }
 
-    // 🔍 Compute Most Frequent Region
+    // Wait for all location names
+    const locationPromises = filteredOutages.map(outage => {
+      if (outage.latitude && outage.longitude && !outage.locationName) {
+        return this.getLocationName(outage.latitude, outage.longitude);
+      }
+      return Promise.resolve(outage.locationName || 'N/A');
+    });
+    await Promise.all(locationPromises);
+
+    // Compute analytics
     const regionCount: Record<string, number> = {};
-      for (const outage of filteredOutages) {
-        const region = this.extractRegion(outage.location); // or outage.region if direct
-        regionCount[region] = (regionCount[region] || 0) + 1;
-      }
+    for (const outage of filteredOutages) {
+      const region = this.extractRegion(outage.location);
+      regionCount[region] = (regionCount[region] || 0) + 1;
+    }
+    const maxRegionCount = Math.max(...Object.values(regionCount));
+    const mostAffectedRegions = Object.entries(regionCount)
+      .filter(([_, count]) => count === maxRegionCount)
+      .map(([region]) => region);
 
-      // Find max frequency
-      const maxRegionCount = Math.max(...Object.values(regionCount));
-
-      // Get all regions with max count
-      const mostAffectedRegions = Object.entries(regionCount)
-        .filter(([_, count]) => count === maxRegionCount)
-        .map(([region]) => region);
-
-
-    // 🔍 Compute Most Frequent Type (title)
     const typeCount: Record<string, number> = {};
-      for (const outage of filteredOutages) {
-        const type = outage.title || 'Unknown';
-        typeCount[type] = (typeCount[type] || 0) + 1;
-      }
+    for (const outage of filteredOutages) {
+      const type = outage.title || 'Unknown';
+      typeCount[type] = (typeCount[type] || 0) + 1;
+    }
+    const maxTypeCount = Math.max(...Object.values(typeCount));
+    const mostFrequentTitles = Object.entries(typeCount)
+      .filter(([_, count]) => count === maxTypeCount)
+      .map(([type]) => type);
 
-      const maxTypeCount = Math.max(...Object.values(typeCount));
-
-      const mostFrequentTitles = Object.entries(typeCount)
-        .filter(([_, count]) => count === maxTypeCount)
-        .map(([type]) => type);
-
-
-    // 📄 Generate report using analytics
     await this.reportService.generateReport(
       filteredOutages,
       this.fromDate,
       this.toDate,
       this.reportFormat,
-      {
-        mostAffectedRegions,
-        mostFrequentTitles
-      }
+      { mostAffectedRegions, mostFrequentTitles }
     );
-
     this.showDialog('Success', 'Report generated successfully', 'success');
-
   } catch (error) {
     console.error('Error generating report:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to generate report. Please try again.';
-    this.showDialog('Error', errorMessage, 'error');
+    this.showDialog('Error', 'Failed to generate report. Please try again.', 'error');
   }
 }
 

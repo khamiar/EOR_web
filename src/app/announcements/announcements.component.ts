@@ -12,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { AnnouncementService } from '../services/announcement.service';
 import { Announcement } from '../models/announcement.model';
 import { AnnouncementDialogComponent } from './components/announcement-dialog/announcement-dialog.component';
+import { UserService, User } from '../services/user.service';
 
 @Component({
   selector: 'app-announcements',
@@ -33,6 +34,8 @@ export class AnnouncementsComponent implements OnInit {
   announcements: Announcement[] = [];
   dataSource: MatTableDataSource<Announcement>;
   displayedColumns: string[] = ['title', 'category', 'postedBy', 'status', 'actions'];
+  currentUser: User | null = null;
+  canCreateAnnouncements = false;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -40,13 +43,30 @@ export class AnnouncementsComponent implements OnInit {
   constructor(
     private dialog: MatDialog,
     private announcementService: AnnouncementService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private userService: UserService
   ) {
     this.dataSource = new MatTableDataSource<Announcement>();
   }
 
   ngOnInit() {
+    this.loadCurrentUser();
     this.loadAnnouncements();
+  }
+
+  loadCurrentUser() {
+    this.userService.getCurrentUser().subscribe({
+      next: (user) => {
+        this.currentUser = user;
+        this.canCreateAnnouncements = user.role === 'ADMIN' || user.role === 'USER';
+        console.log('Current user role:', user.role);
+        console.log('Can create announcements:', this.canCreateAnnouncements);
+      },
+      error: (error) => {
+        console.error('Failed to load current user:', error);
+        this.canCreateAnnouncements = false;
+      }
+    });
   }
 
   ngAfterViewInit() {

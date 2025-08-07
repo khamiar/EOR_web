@@ -38,14 +38,20 @@ export class ReportService {
   constructor(private http: HttpClient) { }
 
   // Get all reports
-  getAllReports(): Observable<any> {
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-  
-    return this.http.get(`${this.apiUrl}/outages`, { headers });
-  }
+getAllReports(): Observable<OutageReport[]> {
+  const token = localStorage.getItem('token');
+  const headers = new HttpHeaders({
+    'Authorization': `Bearer ${token}`
+  });
+  return this.http.get<OutageReport[]>(`${this.apiUrl}/outages`, { headers }).pipe(
+    map(outages => outages.map(outage => ({
+      ...outage,
+      id: Number(outage.id), // Ensure ID is a number
+      reportedAt: outage.reportedAt ? new Date(outage.reportedAt).toISOString() : '',
+      resolvedAt: outage.resolvedAt ? new Date(outage.resolvedAt).toISOString() : undefined
+    })))
+  );
+}
   
 
   // Get report by ID
@@ -147,56 +153,60 @@ private capitalizeWords(text: string): string {
 private generatePDF(outages: OutageReport[], fromDate: string, toDate: string): void {
   try {
     const doc = new jsPDF();
-    
+
+    // Add UTF-8 font (e.g., Helvetica, which supports basic Latin and some special characters)
+    doc.setFont('Helvetica');
+
     // Header
     doc.setFontSize(20);
     doc.text('Outage Report', 14, 20);
-    
     doc.setFontSize(12);
     doc.text(`Date Range: ${fromDate} to ${toDate}`, 14, 30);
-    
-    // Table
-    const tableColumn = ['Title', 'Location', 'Status', 'Reported At', 'Resolved At'];
+
+    // Sanitize data to prevent encoding issues
     const tableRows = outages.map(outage => [
-      outage.title,
-      outage.locationName || 'N/A',
-      outage.status,
-      new Date(outage.reportedAt).toLocaleString(),
-      outage.resolvedAt ? new Date(outage.resolvedAt).toLocaleString() : 'N/A'
+      outage.title || 'Unknown',
+      outage.locationName?.replace(/[^\x00-\x7F]/g, '') || 'N/A', // Remove non-ASCII characters if needed
+      outage.status || 'Unknown',
+      outage.reportedAt ? new Date(outage.reportedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A',
+      outage.resolvedAt ? new Date(outage.resolvedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'
     ]);
 
     autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
+      head: [['ID', 'Title', 'Location', 'Region', 'Status', 'Reported At', 'Resolved At']],
+      body: outages.map(outage => [
+        outage.id.toString(), // Include ID explicitly
+        outage.title || 'Unknown',
+        outage.locationName?.replace(/[^\x00-\x7F]/g, '') || 'N/A',
+        outage.region?.replace(/[^\x00-\x7F]/g, '') || 'N/A',
+        outage.status || 'Unknown',
+        outage.reportedAt ? new Date(outage.reportedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A',
+        outage.resolvedAt ? new Date(outage.resolvedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'
+      ]),
       startY: 40,
       theme: 'grid',
-      styles: {
-        fontSize: 10,
-        cellPadding: 3,
+      styles: { fontSize: 10, cellPadding: 3, font: 'Helvetica' },
+      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontSize: 12, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      columnStyles: {
+        0: { cellWidth: 15 }, // ID
+        1: { cellWidth: 40 }, // Title
+        2: { cellWidth: 40 }, // Location
+        3: { cellWidth: 30 }, // Region
+        4: { cellWidth: 20 }, // Status
+        5: { cellWidth: 25 }, // Reported At
+        6: { cellWidth: 25 }  // Resolved At
       },
-      headStyles: {
-        fillColor: [59, 130, 246],
-        textColor: 255,
-        fontSize: 12,
-        fontStyle: 'bold',
-      },
-      alternateRowStyles: {
-        fillColor: [245, 245, 245],
-      },
+      margin: { left: 10, right: 10 }
     });
 
     const finalY = (doc as any).lastAutoTable.finalY || 40;
-
-    // Summaries
     const mostFrequentRegion = this.getMostFrequent(outages.map(o => o.region));
     const mostFrequentType = this.getMostFrequent(outages.map(o => o.title));
-
     doc.setFontSize(12);
     doc.text(`Total Outages: ${outages.length}`, 14, finalY + 20);
     doc.text(`Most Affected Region: ${mostFrequentRegion}`, 14, finalY + 30);
     doc.text(`Most Frequent Outage Type: ${mostFrequentType}`, 14, finalY + 40);
-
-    // Save
     doc.save(`outage-report-${fromDate}-to-${toDate}.pdf`);
   } catch (error) {
     console.error('Error generating PDF:', error);

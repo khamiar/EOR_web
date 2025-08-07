@@ -11,9 +11,9 @@ export interface Announcement {
   category: string;
   attachmentUrl?: string | null;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  publishDate?: Date;
-  postedBy: string;
-  postedAt: Date;
+  publishDate?: Date | string | null;
+  postedBy?: string;
+  postedAt: Date | string;
   updatedAt?: Date;
   sendNotification?: boolean;
 }
