@@ -37,32 +37,22 @@
         <td mat-cell *matCellDef="let row">{{row.category}}</td>
       </ng-container>
 
-      <!-- Status Column -->
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
-        <td mat-cell *matCellDef="let row">
-          <span class="status-badge" [ngClass]="'status-' + row.status.toLowerCase()">
-            {{row.status}}
-          </span>
-        </td>
-      </ng-container>
-
-      <!-- Publish Date Column -->
-      <ng-container matColumnDef="publishDate">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Publish Date</th>
-        <td mat-cell *matCellDef="let row">{{row.publishDate | date:'medium'}}</td>
-      </ng-container>
-
-      <!-- Posted By Column -->
-      <ng-container matColumnDef="postedBy">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Posted By</th>
-        <td mat-cell *matCellDef="let row">{{row.postedBy?.fullName || 'Unknown'}}</td>
+      <!-- Content Column -->
+      <ng-container matColumnDef="content">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Content</th>
+        <td mat-cell *matCellDef="let row">{{row.content}}</td>
       </ng-container>
 
       <!-- Posted At Column -->
       <ng-container matColumnDef="postedAt">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>Posted At</th>
         <td mat-cell *matCellDef="let row">{{ row.postedAt | date:'medium' }}</td>
+      </ng-container>
+
+      <!-- Posted By Column -->
+      <ng-container matColumnDef="postedBy">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Posted By</th>
+        <td mat-cell *matCellDef="let row">{{row.postedBy?.fullName || 'Unknown'}}</td>
       </ng-container>
 
       <!-- Actions Column -->

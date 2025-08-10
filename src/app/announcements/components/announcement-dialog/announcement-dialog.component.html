@@ -32,29 +32,10 @@
           <mat-icon matSuffix>category</mat-icon>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="form-half">
-          <mat-label>Status</mat-label>
-          <mat-select formControlName="status" required>
-            <mat-option *ngFor="let status of statuses" [value]="status">
-              <span [class]="'status-' + status.toLowerCase()">{{status}}</span>
-            </mat-option>
-          </mat-select>
-          <mat-icon matSuffix>info</mat-icon>
-        </mat-form-field>
+
       </div>
 
-      <div class="form-section">
-        <mat-form-field appearance="outline" class="w-100">
-          <mat-label>Publish Date</mat-label>
-          <input
-            matInput
-            type="date"
-            formControlName="publishDate"
-            placeholder="Select a date"
-          >
-          <mat-hint>Format: MM/DD/YYYY</mat-hint>
-        </mat-form-field>
-      </div>
+
 
       <div class="form-section file-upload-container">
         <label class="file-upload-label">Attachment</label>
@@ -70,12 +51,7 @@
         </div>
       </div>
 
-      <div class="form-section notification-toggle">
-        <mat-checkbox formControlName="sendNotification">
-          Send Notification
-        </mat-checkbox>
-        <mat-icon class="toggle-icon">notifications</mat-icon>
-      </div>
+
     </mat-dialog-content>
 
     <mat-dialog-actions align="end">

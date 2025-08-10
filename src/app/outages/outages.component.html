@@ -108,7 +108,7 @@
             <button mat-icon-button color="warn" (click)="deleteOutage(outage.id)" title="Delete">
               <mat-icon>delete</mat-icon>
             </button>
-            <button mat-icon-button color="warn" (click)="shareOutage(outage.id)" title="Delete">
+            <button mat-icon-button color="warn" (click)="shareOutage(outage)" title="Share Outage Report">
               <mat-icon>share</mat-icon>
             </button>
           </div>
@@ -307,6 +307,50 @@
           {{ status | titlecase }}
         </div>
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Share Options Dialog -->
+<div class="modal" [class.show]="showShareDialog" (click)="closeShareDialog()">
+  <div class="modal-content share-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Share Outage Report</h2>
+      <button class="close" (click)="closeShareDialog()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    
+    <div class="share-options">
+      <div class="share-option" (click)="shareViaWebShare()">
+        <span class="material-icons">share</span>
+        <span>Native Share</span>
+        <small>Use device's share menu</small>
+      </div>
+      
+      <div class="share-option" (click)="shareViaClipboard()">
+        <span class="material-icons">content_copy</span>
+        <span>Copy to Clipboard</span>
+        <small>Paste anywhere</small>
+      </div>
+      
+      <div class="share-option" (click)="shareViaWhatsApp()">
+        <span class="material-icons">whatsapp</span>
+        <span>WhatsApp</span>
+        <small>Share via WhatsApp</small>
+      </div>
+      
+      <div class="share-option" (click)="shareViaEmail()">
+        <span class="material-icons">email</span>
+        <span>Email</span>
+        <small>Send via email</small>
+      </div>
+      
+      <div class="share-option" (click)="downloadAsFile()">
+        <span class="material-icons">download</span>
+        <span>Download File</span>
+        <small>Save as text file</small>
+      </div>
     </div>
   </div>
 </div>

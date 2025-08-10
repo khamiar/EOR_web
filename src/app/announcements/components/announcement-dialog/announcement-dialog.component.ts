@@ -40,7 +40,6 @@ import { UserService, User } from '../../../services/user.service';
 export class AnnouncementDialogComponent implements OnInit {
   form: FormGroup;
   categories = ['General', 'News', 'Event', 'Update', 'Other'];
-  statuses = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
   isUploading = false;
   selectedFile: File | null = null;
 
@@ -53,16 +52,13 @@ export class AnnouncementDialogComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data: Announcement,
     private userService: UserService
   ) {
-    this.form = this.fb.group({
-      title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
-      content: [''],
-      category: ['', Validators.required],
-      status: ['DRAFT', Validators.required],
-      attachmentUrl: [''],
-      publishDate: [null],
-      sendNotification: [false],
-      postedAt: [new Date(), Validators.required]
-    });
+                  this.form = this.fb.group({
+                title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+                content: [''],
+                category: ['', Validators.required],
+                attachmentUrl: [''],
+                postedAt: [new Date(), Validators.required]
+              });
   }
 
   ngOnInit() {
@@ -101,17 +97,11 @@ export class AnnouncementDialogComponent implements OnInit {
           title: this.form.get('title')?.value,
           content: this.form.get('content')?.value,
           category: this.form.get('category')?.value,
-          status: this.form.get('status')?.value,
           attachmentUrl,
-          sendNotification: this.form.get('sendNotification')?.value,
           postedAt: new Date().toISOString()
         };
 
-        // Handle publishDate separately to avoid type issues
-        const publishDateValue = this.form.get('publishDate')?.value;
-        if (publishDateValue) {
-          formData.publishDate = new Date(publishDateValue + 'T00:00:00').toISOString();
-        }
+
 
         console.log('Submitting announcement:', formData);
 

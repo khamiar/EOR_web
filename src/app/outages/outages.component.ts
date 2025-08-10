@@ -89,6 +89,8 @@ export class OutagesComponent implements OnInit, OnDestroy {
   isMediaLoading: boolean = false;
   showStatusDialog: boolean = false;
   isStatusUpdateOpen: boolean = false;
+  showShareDialog: boolean = false;
+  currentOutageForSharing: OutageReport | null = null;
 
   // Auto-refresh properties
   // Only keep loadOutages and WebSocket logic
@@ -490,55 +492,151 @@ async generateReport() {
   }
 
   async shareOutage(outage: OutageReport) {
-    this.selectedOutage = outage;
+    this.currentOutageForSharing = outage;
+    this.showShareDialog = true;
+  }
 
-    const lat = outage.latitude;
-    const lng = outage.longitude;
+  closeShareDialog() {
+    this.showShareDialog = false;
+    this.currentOutageForSharing = null;
+  }
 
-    // Generate Google Maps link
-    const mapsLink = (lat && lng)
-      ? `https://www.google.com/maps?q=${lat},${lng}`
-      : 'Location not available';
-
-    // 🔥 Get actual human-readable location
-    let locationName = 'Location not available';
-    if (lat && lng) {
-      locationName = await this.getLocationName(lat, lng);
+  async shareViaWebShare() {
+    if (!this.currentOutageForSharing) return;
+    
+    try {
+      const reportInfo = await this.formatReportInfo(this.currentOutageForSharing);
+      const mapsLink = this.getMapsLink(this.currentOutageForSharing);
+      
+      // Check if Web Share API is supported
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Outage Report - EOReporter',
+            text: reportInfo,
+            url: mapsLink !== 'Location not available' ? mapsLink : undefined,
+          });
+          this.showDialog('Success', 'Shared successfully!', 'success');
+        } catch (shareError) {
+          console.log('User cancelled sharing or share failed:', shareError);
+          this.showDialog('Info', 'Sharing was cancelled or failed. Please try another method.', 'info');
+        }
+      } else {
+        this.showDialog('Info', 'Native sharing not available on this device. Please try another method.', 'info');
+      }
+    } catch (error) {
+      console.error('Web Share failed:', error);
+      this.showDialog('Error', 'Failed to share. Please try another method.', 'error');
     }
+    this.closeShareDialog();
+  }
 
-    // 🧾 Format the report
-    const reportInfo = `
-  📢 *EOReporter - Outage Report*
-
-  📝 Description: ${outage.description || 'No Description'}
-  📍 Region: ${outage.region || 'Not Provided'}
-  📌 Location: ${locationName}
-  🗺️ Google Maps: ${mapsLink}
-  👤 Reported By: ${outage.reporter?.fullName || 'Anonymous'}
-  📞 Phone: ${outage.reporter?.phoneNumber || 'Not Provided'}
-    `.trim();
-
-    // 🔗 Share via Web Share API if available
-    if (navigator.share) {
-      navigator.share({
-        title: 'Outage Report - EOReporter',
-        text: reportInfo,
-        url: mapsLink !== 'Location not available' ? mapsLink : undefined,
-      }).then(() => {
-        console.log('Shared successfully!');
-      }).catch(err => {
-        console.error('Error sharing:', err);
-      });
-    } else {
-      // 📋 Fallback: copy to clipboard & open WhatsApp
+  async shareViaClipboard() {
+    if (!this.currentOutageForSharing) return;
+    
+    try {
+      const reportInfo = await this.formatReportInfo(this.currentOutageForSharing);
       await navigator.clipboard.writeText(reportInfo);
-      alert('Outage info copied to clipboard!');
+      this.showDialog('Success', 'Copied to clipboard!', 'success');
+    } catch (error) {
+      console.error('Clipboard failed:', error);
+      this.showDialog('Error', 'Failed to copy to clipboard. Please try another method.', 'error');
+    }
+    this.closeShareDialog();
+  }
 
+  async shareViaWhatsApp() {
+    if (!this.currentOutageForSharing) return;
+    
+    try {
+      const reportInfo = await this.formatReportInfo(this.currentOutageForSharing);
       const encodedMsg = encodeURIComponent(reportInfo);
-      window.open(`https://wa.me/?text=${encodedMsg}`, '_blank');
+      const whatsappUrl = `https://wa.me/?text=${encodedMsg}`;
+      window.open(whatsappUrl, '_blank');
+      this.closeShareDialog();
+    } catch (error) {
+      console.error('WhatsApp share failed:', error);
+      this.showDialog('Error', 'Failed to open WhatsApp. Please try another method.', 'error');
     }
   }
 
+  async shareViaEmail() {
+    if (!this.currentOutageForSharing) return;
+    
+    try {
+      const reportInfo = await this.formatReportInfo(this.currentOutageForSharing);
+      const subject = encodeURIComponent(`Outage Report - ${this.currentOutageForSharing.title}`);
+      const body = encodeURIComponent(reportInfo);
+      const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+      window.open(mailtoUrl);
+      this.closeShareDialog();
+    } catch (error) {
+      console.error('Email share failed:', error);
+      this.showDialog('Error', 'Failed to open email client. Please try another method.', 'error');
+    }
+  }
+
+  async downloadAsFile() {
+    if (!this.currentOutageForSharing) return;
+    
+    try {
+      const reportInfo = await this.formatReportInfo(this.currentOutageForSharing);
+      const filename = `outage-report-${this.currentOutageForSharing.id}.txt`;
+      this.downloadAsTextFile(reportInfo, filename);
+      this.showDialog('Success', 'File downloaded successfully!', 'success');
+    } catch (error) {
+      console.error('Download failed:', error);
+      this.showDialog('Error', 'Failed to download file. Please try another method.', 'error');
+    }
+    this.closeShareDialog();
+  }
+
+  private async formatReportInfo(outage: OutageReport): Promise<string> {
+    const lat = outage.latitude;
+    const lng = outage.longitude;
+
+    // Get location name
+    let locationName = 'Location not available';
+    if (lat && lng) {
+      try {
+        locationName = await this.getLocationName(lat, lng);
+      } catch (error) {
+        console.warn('Failed to get location name:', error);
+        locationName = `Coordinates: ${lat}, ${lng}`;
+      }
+    }
+
+    return `
+📢 *EOReporter - Outage Report*
+
+📝 Description: ${outage.description || 'No Description'}
+📍 Region: ${outage.region || 'Not Provided'}
+📌 Location: ${locationName}
+🗺️ Google Maps: ${this.getMapsLink(outage)}
+👤 Reported By: ${outage.reporter?.fullName || 'Anonymous'}
+📞 Phone: ${outage.reporter?.phoneNumber || 'Not Provided'}
+📅 Reported: ${new Date(outage.reportedAt).toLocaleString()}
+    `.trim();
+  }
+
+  private getMapsLink(outage: OutageReport): string {
+    const lat = outage.latitude;
+    const lng = outage.longitude;
+    return (lat && lng) ? `https://www.google.com/maps?q=${lat},${lng}` : 'Location not available';
+  }
+
+  // Helper method to download as text file
+  private downloadAsTextFile(content: string, filename: string) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
 
 
 }

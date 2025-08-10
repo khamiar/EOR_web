@@ -33,7 +33,7 @@ import { UserService, User } from '../services/user.service';
 export class AnnouncementsComponent implements OnInit {
   announcements: Announcement[] = [];
   dataSource: MatTableDataSource<Announcement>;
-  displayedColumns: string[] = ['title', 'category', 'postedBy', 'status', 'actions'];
+      displayedColumns: string[] = ['title', 'content', 'category', 'postedBy', 'postedAt', 'actions'];
   currentUser: User | null = null;
   canCreateAnnouncements = false;
 
